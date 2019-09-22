@@ -1,0 +1,84 @@
+Design document
+
+
+available event listeners
+* Device Announcement
+* Beat
+* Master
+* Update <-- most information
+* Media Details  <-- callback when requesting
+* Mount
+* Signature
+
+
+
+SongScrobbler
+* properties:
+  which device 			<- CdjStatus.getTrackSourcePlayer()
+  song details ready?	<- true after our media query has finished
+  song details  		<- set after ^
+  total played time 	<- updated with each received message
+  current state 		<- see below
+  last update timestamp <- timestamp of last CdjStatus received. 
+  						   Needed for incrementing played time,
+* methods
+  updatePlayTime()
+
+Song States
+* states:
+  Started 
+  Ignored
+  Cueing 
+  Playing
+  PlayingPaused
+  Scrobbling
+  ScrobblingPaused
+  Stopped
+
+Song Transitions
+	Started -> Ignored (happens when no metadata available)
+	Started -> Cueing
+	Ignored -> Stopped
+	Cueing -> Started
+	Cueing -> Playing               <- raise a now playing (get metadata now)
+	Playing -> PlayingPaused
+	Playing -> Stopped
+	Playing -> Scrobbling           
+	PlayingPaused -> Playing
+	PlayingPaused -> Stopped
+	Scrobbling -> ScrobblingPaused
+	Scrobbling -> Stopped           <- raise a retire-scrobbling
+	ScrobblingPaused -> Scrobbling
+	ScrobblingPaused -> Stopped     <- raise a retire-scrobbling
+
+SongScrobblerUpdateListener
+* methods
+  receive(DeviceUpdate update) https://deepsymmetry.org/beatlink/apidocs/org/deepsymmetry/beatlink/DeviceUpdateListener.html
+  * either a MixerStatus or a CdjStatus (which is what we're interested in)
+  * how do we use this to work out the play time of a track?
+
+  General:
+  * receive things which send us to stopped (such as change of track or eject)
+  	isAtEnd() true
+  	isTrackLoaded() false
+
+  * receive things which increment play time by (timestamp - previous timestamp) x Util.pitchToPercentage(getPitch()), but only if isPlayingForward()
+  	* if play time > 30s
+  		transition Cueing -> Playing
+  	* if scrobble point known && play time > scrobble point 
+  		transition Playing -> Scrobbled
+
+
+CdjScrobbler
+* songscrobbler Map<int, SongScrobbler>
+  start a metadatafinder (see https://github.com/Deep-Symmetry/beat-link/#media-details)
+
+* receive(DeviceUpdate)
+	if isLinkMediaAvailable()
+	  	send to the right cdjSongScrobbler
+	  	add returned event (if any) to the queue of events to deal with TODO
+	  		e.g now playing, retire scrobbling
+	  	if the song scrobbler is now Stopped:
+	  		recreate song scrobbler
+
+
