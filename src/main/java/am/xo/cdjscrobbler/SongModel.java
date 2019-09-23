@@ -1,23 +1,18 @@
 package am.xo.cdjscrobbler;
 
 import am.xo.cdjscrobbler.SongEvents.NowPlayingEvent;
-import am.xo.cdjscrobbler.SongEvents.ResetEvent;
-import am.xo.cdjscrobbler.SongEvents.ScrobbleEvent;
 import org.deepsymmetry.beatlink.CdjStatus;
-import org.deepsymmetry.beatlink.DeviceUpdate;
 import org.deepsymmetry.beatlink.Util;
 
 public class SongModel {
 
-    public enum SongStateTransition {
-
         /**
          * Song Transitions
          * 	Started -> Ignored (happens when no metadata available)
-         * 	Started -> Cueing
+         * 	Started -> Cueing ✅
          * 	Ignored -> Stopped
-         * 	Cueing -> Started
-         * 	Cueing -> Playing               <- raise a now playing (get metadata now)
+         * 	Cueing -> Started ✅
+         * 	Cueing -> Playing ✅              <- raise a now playing (get metadata now)
          * 	Playing -> PlayingPaused
          * 	Playing -> Stopped
          * 	Playing -> Scrobbling
@@ -29,154 +24,103 @@ public class SongModel {
          * 	ScrobblingPaused -> Stopped     <- raise a retire-scrobbling
          */
 
-        NONE,
-        TO_STARTED {
-            @Override
-            public SongState nextState(CdjStatus update, SongModel model) {
-                return SongState.STARTED;
-            }
-            @Override
-            public SongEvent yieldEvent(CdjStatus update, SongModel model){
-
-                return new ResetEvent(); //TODO finish me
-            }
-        },
-        TO_IGNORED {
-            @Override
-            public SongState nextState(CdjStatus update, SongModel model) {
-                return SongState.IGNORED;
-            }
-        },
-        TO_CUEING {
-            @Override
-            public SongState nextState(CdjStatus update, SongModel model) {
-                return SongState.CUEING;
-            }
-        },
-        TO_PLAYING {
-            @Override
-            public SongState nextState(CdjStatus update, SongModel model) {
-                return SongState.PLAYING;
-            }
-
-            @Override
-            public SongEvent yieldEvent(CdjStatus update, SongModel model){
-                return new NowPlayingEvent(); //TODO finish me
-            }
-        },
-        TO_SCROBBLING {
-            @Override
-            public SongState nextState(CdjStatus update, SongModel model) {
-                return SongState.SCROBBLING;
-            }
-        },
-        STILL_CUEING {
-            @Override
-            public SongState nextState(CdjStatus update, SongModel model) {
-                return SongState.CUEING;
-            }
-        },
-        STILL_PLAYING {
-            @Override
-            public SongState nextState(CdjStatus update, SongModel model) {
-                return SongState.PLAYING;
-            }
-        },
-        STILL_SCROBBLING {
-            @Override
-            public SongState nextState(CdjStatus update, SongModel model) {
-                return SongState.SCROBBLING;
-            }
-        },
-        SCROBBLING_TO_STOPPED {
-            @Override
-            public SongState nextState(CdjStatus update, SongModel model) {
-                return SongState.STOPPED;
-            }
-            @Override
-            public SongEvent yieldEvent(CdjStatus update, SongModel model){
-                return new ScrobbleEvent(); //TODO finish me
-            }
-        },
-        OTHER_TO_STOPPED,
-        STILL_STOPPED;
-
-        public SongState nextState(CdjStatus update, SongModel model) {
-            return SongState.STOPPED;
-        }
-
-        public SongEvent yieldEvent(CdjStatus update, SongModel model){
-            return null;
-        }
-
-    }
-
     public enum SongState {
         STARTED {
             @Override
-            public SongStateTransition next(CdjStatus update, SongModel model) {
+            public SongEvent applyNext(SongModel model, CdjStatus update) {
                 if(update.isPlayingForwards()) {
-                    model.addPlaytimeFrom(update);
-                    return SongStateTransition.TO_CUEING;
+                    model.currentState = CUEING;
                 }
-                return SongStateTransition.NONE;
+                return null;
             }
         },
 
         IGNORED {
             @Override
-            public SongStateTransition next(CdjStatus update, SongModel model) {
+            public SongEvent applyNext(SongModel model, CdjStatus update) {
                 return SongStateTransition.NONE;
             }
         },
 
         CUEING {
             @Override
-            public SongStateTransition next(CdjStatus update, SongModel model) {
+            public SongEvent applyNext(SongModel model, CdjStatus update) {
+                model.addPlaytimeFrom(update);
                 if(update.isPlayingForwards()) {
-                    model.addPlaytimeFrom(update);
-                    return SongStateTransition.TO_CUEING;
+                    if(model.isPastNowPlaying()) {
+                        model.currentState = PLAYING;
+                    }
+                    return new NowPlayingEvent();
+                } else {
+                    // whilst cueing - defined as being first 30s of play - stopping play resets the model
+                    model.resetPlay();
+                    model.currentState = STARTED;
+                    return null;
                 }
-                return SongStateTransition.TO_STARTED;
             }
         },
 
         PLAYING {
             @Override
-            public SongStateTransition next(CdjStatus update, SongModel model) {
-                return SongStateTransition.NONE;
+            public SongEvent applyNext(SongModel model, CdjStatus update) {
+                model.addPlaytimeFrom(update);
+                if(update.isPlayingForwards()) {
+                    if(model.isPastScrobblePoint()) {
+                        model.currentState = SCROBBLING;
+                    }
+                } else {
+                    model.currentState = PLAYINGPAUSED;
+                }
+                return null;
             }
         },
 
         PLAYINGPAUSED {
             @Override
-            public SongStateTransition next(CdjStatus update, SongModel model) {
-                return SongStateTransition.NONE;
+            public SongEvent applyNext(SongModel model, CdjStatus update) {
+                if(update.isPlayingForwards()) {
+                    model.currentState = PLAYING;
+                }
+                return null;
             }
         },
 
         SCROBBLING {
             @Override
-            public SongStateTransition next(CdjStatus update, SongModel model) {
-                return SongStateTransition.NONE;
+            public SongEvent applyNext(SongModel model, CdjStatus update) {
+                model.addPlaytimeFrom(update);
+                if(!update.isPlayingForwards()) {
+                    model.currentState = SCROBBLINGPAUSED;
+                }
+                return null;
             }
         },
 
         SCROBBLINGPAUSED {
             @Override
-            public SongStateTransition next(CdjStatus update, SongModel model) {
-                return SongStateTransition.NONE;
+            public SongEvent applyNext(SongModel model, CdjStatus update) {
+                if(update.isPlayingForwards()) {
+                    model.currentState = SCROBBLING;
+                }
+                return null;
             }
         },
 
         STOPPED {
             @Override
-            public SongStateTransition next(CdjStatus update, SongModel model) {
-                return SongStateTransition.NONE;
+            public SongEvent applyNext(SongModel model, CdjStatus update) {
+                return null;
             }
         };
 
-        abstract public SongStateTransition next(CdjStatus update, SongModel model);
+        /**
+         * transitions the state machine, if necessary. May return an event.
+         *
+         * @param model
+         * @param update
+         * @return
+         */
+        abstract public SongEvent applyNext(SongModel model, CdjStatus update);
     }
 
 
@@ -202,22 +146,19 @@ public class SongModel {
     }
 
     public SongEvent update(CdjStatus update) {
-        SongStateTransition t = currentState.next(update, this);
-        SongState nextState    = t.nextState(update, this);
-        SongEvent yieldedEvent = t.yieldEvent(update, this);
-
+        SongEvent yieldedEvent = currentState.applyNext(this, );
         lastUpdate = update.getTimestamp();
-        currentState = nextState;
         return yieldedEvent;
     }
 
-    public SongEvent yieldEvent() {
-        // most situations do not yield an event
-        return null;
+    public void resetPlay() {
+        hasMetadata = false;
+        song = null;
+        totalPlayTime = 0;
     }
 
     public void addPlaytimeFrom(CdjStatus update) {
-        if(lastUpdate != 0) {
+        if(lastUpdate != 0 && update.isPlayingForwards()) {
             long nanosToAdd = lastUpdate - update.getTimestamp();
             double tempo = Util.pitchToMultiplier(update.getPitch());
             totalPlayTime += tempo * nanosToAdd;
