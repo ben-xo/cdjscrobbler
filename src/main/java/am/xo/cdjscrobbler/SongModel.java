@@ -172,7 +172,7 @@ public class SongModel {
     }
 
     public ArrayList<SongEvent> update(CdjStatus update) {
-        return update(update, new ArrayList<SongEvent>);
+        return update(update, new ArrayList<SongEvent>());
     }
 
     protected ArrayList<SongEvent> update(CdjStatus update, ArrayList<SongEvent> returnedEvents) {
