@@ -18,7 +18,7 @@ public class Application
 
     protected LinkedBlockingQueue<SongEvent> songEventQueue;
     protected UpdateListener updateListener;
-    protected QueueProcessor queueProcessor;
+//    protected QueueProcessor queueProcessor;
 
     public static void main( String[] args ) throws Exception
     {
@@ -44,7 +44,7 @@ public class Application
         VirtualCdj.getInstance().addUpdateListener(updateListener);
 
         logger.info( "Starting QueueProcessor…" );
-        queueProcessor = new QueueProcessor(songEventQueue);
+//        queueProcessor = new QueueProcessor(songEventQueue);
 
 
 
