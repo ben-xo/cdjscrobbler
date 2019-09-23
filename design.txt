@@ -12,10 +12,10 @@ available event listeners
 
 
 
-SongScrobbler
+CdjScrobbler.SongModel
 * properties:
   which device 			<- CdjStatus.getTrackSourcePlayer()
-  song details ready?	<- true after our media query has finished
+  has metadata?     	<- true after our media query has finished
   song details  		<- set after ^
   total played time 	<- updated with each received message
   current state 		<- see below
@@ -24,7 +24,7 @@ SongScrobbler
 * methods
   updatePlayTime()
 
-Song States
+CdjScrobbler.SongState
 * states:
   Started 
   Ignored
@@ -38,7 +38,7 @@ Song States
 Song Transitions
 	Started -> Ignored (happens when no metadata available)
 	Started -> Cueing
-	Ignored -> Stopped
+	Ignored -> Stopped    
 	Cueing -> Started
 	Cueing -> Playing               <- raise a now playing (get metadata now)
 	Playing -> PlayingPaused
@@ -51,7 +51,7 @@ Song Transitions
 	ScrobblingPaused -> Scrobbling
 	ScrobblingPaused -> Stopped     <- raise a retire-scrobbling
 
-SongScrobblerUpdateListener
+CdjScrobbler.UpdateListener
 * methods
   receive(DeviceUpdate update) https://deepsymmetry.org/beatlink/apidocs/org/deepsymmetry/beatlink/DeviceUpdateListener.html
   * either a MixerStatus or a CdjStatus (which is what we're interested in)
@@ -70,7 +70,7 @@ SongScrobblerUpdateListener
 
 
 CdjScrobbler
-* songscrobbler Map<int, SongScrobbler>
+* songscrobbler Map<int, CdjScrobblerSongModel>
   start a metadatafinder (see https://github.com/Deep-Symmetry/beat-link/#media-details)
 
 * receive(DeviceUpdate)
@@ -82,3 +82,19 @@ CdjScrobbler
 	  		recreate song scrobbler
 
 
+thread design
+* event update thread will notify UpdateListener on the event processing thread
+  * this must then put song events on to the queue quickly and .notify the queue processor
+
+Classes:
+* CdjScrobbler.Application
+* CdjScrobbler.UpdateListener
+* CdjScrobbler.SongModel
+* CdjScrobbler.SongState (enum)
+* CdjScrobbler.QueueProcessor
+* CdjScrobbler.SongEvent (abstract)
+* CdjScrobbler.NowPlayingEvent
+* CdjScrobbler.ScrobbleEvent
+* CdjScrobbler.NowPlayingEventListener (interface)
+* CdjScrobbler.ScrobbleEventListener (interface)
+* CdjScrobbler.Scrobbler
