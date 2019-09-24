@@ -30,11 +30,15 @@ public class Application
     {
         logger.info( "Starting CDJ Scrobbler" );
 
-        logger.info( "Starting MetadataFinder…" );
-        MetadataFinder.getInstance().start();
+        logger.info("Starting DeviceFinder…");
+        DeviceFinder.getInstance().start();
+        while(DeviceFinder.getInstance().getCurrentDevices().isEmpty()) {
+            logger.info("Waiting for devices…");
+            Thread.sleep(1000);
+        }
 
-        logger.info( "Starting VirtualCdj…" );
-        VirtualCdj.getInstance().start();
+        logger.info("Starting MetadataFinder…");
+        MetadataFinder.getInstance().start();
 
         songEventQueue = new LinkedBlockingQueue<SongEvent>();
 
