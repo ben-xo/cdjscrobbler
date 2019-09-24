@@ -8,18 +8,22 @@ import java.util.concurrent.LinkedBlockingQueue;
 
 public class UpdateListener implements DeviceUpdateListener {
 
-    final Logger logger = LoggerFactory.getLogger(Application.class);
+    final Logger logger = LoggerFactory.getLogger(UpdateListener.class);
 
-    private static final int NUM_CDJS = 4;
+    private static final int NUM_CDJS = 16;
 
     protected LinkedBlockingQueue<SongEvent> songEventQueue;
-    protected SongModel[] model;
+
+    /**
+     * 1-based array of SongModels.
+     */
+    protected SongModel[] models;
 
     public UpdateListener(LinkedBlockingQueue<SongEvent> q) {
-        this.songEventQueue = q;
-        model = new SongModel[NUM_CDJS];
-        for (int i = 0; i < NUM_CDJS; i++) {
-            model[i] = new SongModel(i);
+        songEventQueue = q;
+        models = new SongModel[NUM_CDJS+1];
+        for (int i = 1; i <= NUM_CDJS; i++) {
+            models[i] = new SongModel(i);
         }
     }
 
@@ -29,10 +33,13 @@ public class UpdateListener implements DeviceUpdateListener {
         if(deviceUpdate instanceof CdjStatus) {
             CdjStatus s = (CdjStatus) deviceUpdate;
 
-            // CDJs are usually numbered 1-4
+            // CDJs are usually numbered 1-4, but I believe can go higher sometimes
             int deviceNumber = s.getDeviceNumber();
             if(deviceNumber <= NUM_CDJS) {
-                ArrayList<SongEvent> el = model[deviceNumber-1].update(s);
+
+                // Apply all updates to the model.
+                ArrayList<SongEvent> el = models[deviceNumber].update(s);
+
                 el.forEach((e) -> {
                     try {
                         // we only want to put now playing and scrobble events here…

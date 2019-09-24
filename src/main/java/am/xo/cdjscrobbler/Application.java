@@ -43,6 +43,7 @@ public class Application
         songEventQueue = new LinkedBlockingQueue<SongEvent>();
 
         // start two threads with a shared queue
+        // TODO: dynamically add and remove UpdateListeners as devices are announced
         logger.info( "Starting UpdateListener…" );
         updateListener = new UpdateListener(songEventQueue);
         VirtualCdj.getInstance().addUpdateListener(updateListener);
