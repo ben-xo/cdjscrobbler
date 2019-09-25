@@ -66,7 +66,8 @@ public class Application
         logger.info( "Starting QueueProcessor…" );
 //        queueProcessor = new QueueProcessor(songEventQueue);
         while(true) {
-            songEventQueue.take();
+            SongEvent e = songEventQueue.take();
+            logger.info("Received event " + e);
         }
 
 
@@ -74,8 +75,6 @@ public class Application
         // TODO: create a scrobbling adaptor
         // TODO: create a state machine
 
-        // TODO: model is playing / is not playing
-        // TODO: model tempo influence on play time
         // TODO: model "more than half way" ? Adjustable? How much needs to be played to count?
     }
 }

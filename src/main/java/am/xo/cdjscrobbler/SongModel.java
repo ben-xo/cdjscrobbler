@@ -9,6 +9,7 @@ import java.util.ArrayList;
 
 public class SongModel {
 
+    static final int NOW_PLAYING_POINT = 10000; // milliseconds (e.g. 30000 = 30 seconds
 
     /**
      *   which device 			<- CdjStatus.getTrackSourcePlayer()
@@ -41,7 +42,7 @@ public class SongModel {
         SongState prevState = currentState;
         SongEvent yieldedEvent = currentState.applyNext(this, update);
 
-        logger.info(String.format("Device %d rekordbox ID %d %s -> %s (playtime: %d)",
+        logger.info(String.format("Device %d rekordbox ID %d %s -> %s (playtime: %d ms)",
                 deviceNumber, rekordboxId, prevState.name(), currentState.name(), totalPlayTime));
 
         lastUpdate = update.getTimestamp();
@@ -71,7 +72,7 @@ public class SongModel {
     }
 
     public boolean isPastNowPlaying() {
-        return totalPlayTime >= 30000; // 30s
+        return totalPlayTime >= NOW_PLAYING_POINT; // 30s
     }
 
     public boolean isPastScrobblePoint() {

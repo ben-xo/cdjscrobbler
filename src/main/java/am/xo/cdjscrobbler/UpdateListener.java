@@ -53,7 +53,7 @@ public class UpdateListener implements DeviceUpdateListener {
                 el.forEach((e) -> {
                     try {
                         // we only want to put now playing and scrobble events here…
-                        logger.info("Device " + deviceNumber + " event " + e);
+                        logger.info("Device " + deviceNumber + " sending event " + e);
                         songEventQueue.put(e);
                         if(e instanceof ResetEvent) {
                             models[deviceNumber] = new SongModel(deviceNumber);
