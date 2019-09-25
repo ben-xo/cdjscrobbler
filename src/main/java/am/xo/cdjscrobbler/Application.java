@@ -37,8 +37,23 @@ public class Application
             Thread.sleep(1000);
         }
 
-        logger.info("Starting MetadataFinder…");
-        MetadataFinder.getInstance().start();
+        VirtualCdj virtualCdj = VirtualCdj.getInstance();
+
+        logger.info("Starting VirtualCDJ…");
+        while(!virtualCdj.start()) {
+            logger.info("Retrying…");
+        }
+
+        // MediaFinder fails if there's only 1 CDJ on the network, because it can't impersonate an active device.
+        if(virtualCdj.getDeviceNumber() > 4 && DeviceFinder.getInstance().getCurrentDevices().size() == 1) {
+            virtualCdj.setDeviceNumber((byte) 4);
+        }
+
+
+//        System.exit(-1);
+
+//        logger.info("Starting MetadataFinder…");
+//        MetadataFinder.getInstance().start();
 
         songEventQueue = new LinkedBlockingQueue<SongEvent>();
 
@@ -50,6 +65,9 @@ public class Application
 
         logger.info( "Starting QueueProcessor…" );
 //        queueProcessor = new QueueProcessor(songEventQueue);
+        while(true) {
+            songEventQueue.take();
+        }
 
 
 
