@@ -14,6 +14,6 @@ public class TransitionEvent implements SongEvent {
 
     @Override
     public String toString() {
-        return String.format("Transition from {} to {}", from, to);
+        return String.format("Transition from %s to %s", from.name(), to.name());
     }
 }

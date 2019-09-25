@@ -28,7 +28,7 @@ public enum SongState {
     STARTED {
         @Override
         public SongEvent applyNext(SongModel model, CdjStatus update) {
-            if(update.isPlayingForwards()) {
+            if(update.isPlaying() && update.getPlayState2() == CdjStatus.PlayState2.MOVING) {
                 model.rekordboxId = update.getRekordboxId();
                 model.currentState = CUEING;
                 // don't bother with a transition event. Nobody cares
@@ -41,7 +41,7 @@ public enum SongState {
         @Override
         public SongEvent applyNext(SongModel model, CdjStatus update) {
             model.addPlaytimeFrom(update);
-            if(update.isPlayingForwards()) {
+            if(update.isPlaying() && update.getPlayState2() == CdjStatus.PlayState2.MOVING) {
                 // we'll take whatever it is, at this point.
                 // we don't try resolve any metadata until after the now playing point anyway
                 model.rekordboxId = update.getRekordboxId();
@@ -67,7 +67,7 @@ public enum SongState {
             if(isStopping(model, update)) {
                 model.currentState = STOPPED;
                 return new ResetEvent();
-            } else if(update.isPlayingForwards()) {
+            } else if(model.isPlayingForward(update)) {
                 if (model.isPastScrobblePoint()) {
                     model.currentState = SCROBBLING;
                     return new TransitionEvent(PLAYING, SCROBBLING);
@@ -86,7 +86,7 @@ public enum SongState {
             if(isStopping(model, update)) {
                 model.currentState = STOPPED;
                 return new ResetEvent();
-            } else if(update.isPlayingForwards()) {
+            } else if(model.isPlayingForward(update)) {
                 model.currentState = PLAYING;
                 return new TransitionEvent(PLAYINGPAUSED, PLAYING);
             }
@@ -101,7 +101,7 @@ public enum SongState {
             if(isStopping(model, update)) {
                 model.currentState = STOPPED;
                 return new ScrobbleEvent(model.song);
-            } else if(!update.isPlayingForwards()) {
+            } else if(!model.isPlayingForward(update)) {
                 model.currentState = SCROBBLINGPAUSED;
                 return new TransitionEvent(SCROBBLING, SCROBBLINGPAUSED);
             }
@@ -115,7 +115,7 @@ public enum SongState {
             if(isStopping(model, update)) {
                 model.currentState = STOPPED;
                 return new ScrobbleEvent(model.song);
-            } else if(update.isPlayingForwards()) {
+            } else if(model.isPlayingForward(update)) {
                 model.currentState = SCROBBLING;
                 return new TransitionEvent(SCROBBLINGPAUSED, SCROBBLING);
             }

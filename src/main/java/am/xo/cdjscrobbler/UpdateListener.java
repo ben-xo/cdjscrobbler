@@ -1,4 +1,6 @@
 package am.xo.cdjscrobbler;
+import am.xo.cdjscrobbler.SongEvents.ResetEvent;
+import com.sun.org.glassfish.external.statistics.annotations.Reset;
 import org.deepsymmetry.beatlink.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -33,6 +35,14 @@ public class UpdateListener implements DeviceUpdateListener {
         if(deviceUpdate instanceof CdjStatus) {
             CdjStatus s = (CdjStatus) deviceUpdate;
 
+//            logger.debug(deviceUpdate.toString());
+//            logger.debug(((CdjStatus) deviceUpdate).getPlayState1().name());
+//            logger.debug(((CdjStatus) deviceUpdate).getPlayState2().name());
+//            logger.debug(Integer.toString(((CdjStatus) deviceUpdate).getPitch(1)));
+//            logger.debug(Integer.toString(((CdjStatus) deviceUpdate).getPitch(2)));
+//            logger.debug(Integer.toString(((CdjStatus) deviceUpdate).getPitch(3)));
+//            logger.debug(Integer.toString(((CdjStatus) deviceUpdate).getPitch(4)));
+
             // CDJs are usually numbered 1-4, but I believe can go higher sometimes
             int deviceNumber = s.getDeviceNumber();
             if(deviceNumber <= NUM_CDJS) {
@@ -43,8 +53,11 @@ public class UpdateListener implements DeviceUpdateListener {
                 el.forEach((e) -> {
                     try {
                         // we only want to put now playing and scrobble events here…
-                        logger.info("Device " + deviceNumber + " event " + e.getClass().toString());
+                        logger.info("Device " + deviceNumber + " event " + e);
                         songEventQueue.put(e);
+                        if(e instanceof ResetEvent) {
+                            models[deviceNumber] = new SongModel(deviceNumber);
+                        }
                     } catch (InterruptedException ex) {
                         ex.printStackTrace();
                     }

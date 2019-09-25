@@ -5,27 +5,32 @@ import org.deepsymmetry.beatlink.data.TrackMetadata;
 public class SongDetails {
 
     protected TrackMetadata theTrack;
-    long scrobblePointNanos;
+    long scrobblePoint;
 
     public SongDetails(TrackMetadata t) {
         theTrack = t;
-        calculateScrobblePointNanos();
+        calculateScrobblePoint();
     }
 
-    private void calculateScrobblePointNanos() {
+    private void calculateScrobblePoint() {
         int d = theTrack.getDuration();
         if (d < 60) {
             // min scrobble point is 30s.
-            scrobblePointNanos = 30000000;
+            scrobblePoint = 30;
         } else if( d > 480) {
             // max scrobble point is 4 mins
-            scrobblePointNanos = 240000000;
+            scrobblePoint = 240;
         } else {
-            scrobblePointNanos = (d * 1000000) / 2;
+            scrobblePoint = d / 2;
         }
     }
 
-    public long getScrobblePointNanos() {
-        return scrobblePointNanos;
+    public long getScrobblePoint() {
+        return scrobblePoint;
+    }
+
+    public String getFullTitle() {
+        // TODO: wrong way to render artist, fix later
+        return theTrack.getArtist().toString() + " – " + theTrack.getTitle();
     }
 }

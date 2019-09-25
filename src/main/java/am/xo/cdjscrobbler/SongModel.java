@@ -38,10 +38,15 @@ public class SongModel {
     }
 
     protected ArrayList<SongEvent> update(CdjStatus update, ArrayList<SongEvent> returnedEvents) {
+        SongState prevState = currentState;
         SongEvent yieldedEvent = currentState.applyNext(this, update);
+
+        logger.info(String.format("Device %d rekordbox ID %d %s -> %s (playtime: %d)",
+                deviceNumber, rekordboxId, prevState.name(), currentState.name(), totalPlayTime));
+
         lastUpdate = update.getTimestamp();
         if(yieldedEvent != null) {
-            logger.info(yieldedEvent.toString());
+            logger.debug("yielded " + yieldedEvent.getClass().getSimpleName());
             // must apply continuously to catch all events in sequence.
             // this could happen if a single event increments time by a large amount.
             // (TODO: Yeah, this could be a loop)
@@ -58,19 +63,23 @@ public class SongModel {
     }
 
     public void addPlaytimeFrom(CdjStatus update) {
-        if(lastUpdate != 0 && update.isPlayingForwards()) {
-            long nanosToAdd = lastUpdate - update.getTimestamp();
+        if(lastUpdate != 0 && isPlayingForward(update)) {
+            long nanosToAdd = update.getTimestamp() - lastUpdate;
             double tempo = Util.pitchToMultiplier(update.getPitch());
-            totalPlayTime += tempo * nanosToAdd;
+            totalPlayTime += tempo * (nanosToAdd / 1000000);
         }
     }
 
     public boolean isPastNowPlaying() {
-        return totalPlayTime >= 30000000; // 30s
+        return totalPlayTime >= 30000; // 30s
     }
 
     public boolean isPastScrobblePoint() {
-        return song != null && totalPlayTime > song.getScrobblePointNanos();
+        return song != null && (totalPlayTime / 1000) > song.getScrobblePoint();
+    }
+
+    public boolean isPlayingForward(CdjStatus update) {
+        return update.isPlaying() && update.getPlayState2() == CdjStatus.PlayState2.MOVING;
     }
 
 }
