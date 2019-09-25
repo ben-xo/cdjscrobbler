@@ -74,6 +74,7 @@ public class Application
                 NowPlayingEvent npe = (NowPlayingEvent) e;
                 TrackMetadata metadata = MetadataFinder.getInstance().requestMetadataFrom(npe.cdjStatus);
                 logger.info("Song: " + metadata);
+                npe.model.song = new SongDetails(metadata);
             }
         }
 

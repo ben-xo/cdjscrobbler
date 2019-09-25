@@ -31,6 +31,10 @@ public class SongDetails {
 
     public String getFullTitle() {
         // TODO: wrong way to render artist, fix later
-        return theTrack.getArtist().toString() + " – " + theTrack.getTitle();
+        return theTrack.getArtist().label + " – " + theTrack.getTitle();
+    }
+
+    public String toString() {
+        return getFullTitle();
     }
 }

@@ -44,8 +44,8 @@ public class SongModel {
         SongState prevState = currentState;
         SongEvent yieldedEvent = currentState.applyNext(this, update);
 
-        logger.info(String.format("Device %d rekordbox ID %d %s -> %s for %s",
-                deviceNumber, rekordboxId, prevState.name(), currentState.name(), this));
+        logger.info(String.format("Device %d rekordbox ID %d %s -> %s",
+                deviceNumber, rekordboxId, prevState.name(), this));
 
         lastUpdate = update.getTimestamp();
         if(yieldedEvent != null) {
