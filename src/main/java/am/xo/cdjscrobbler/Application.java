@@ -1,8 +1,10 @@
 package am.xo.cdjscrobbler;
 
+import am.xo.cdjscrobbler.SongEvents.NowPlayingEvent;
 import org.deepsymmetry.beatlink.*;
 import org.deepsymmetry.beatlink.data.MetadataFinder;
 
+import org.deepsymmetry.beatlink.data.TrackMetadata;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -52,8 +54,8 @@ public class Application
 
 //        System.exit(-1);
 
-//        logger.info("Starting MetadataFinder…");
-//        MetadataFinder.getInstance().start();
+        logger.info("Starting MetadataFinder…");
+        MetadataFinder.getInstance().start();
 
         songEventQueue = new LinkedBlockingQueue<SongEvent>();
 
@@ -68,6 +70,11 @@ public class Application
         while(true) {
             SongEvent e = songEventQueue.take();
             logger.info("Received event " + e);
+            if(e instanceof NowPlayingEvent) {
+                NowPlayingEvent npe = (NowPlayingEvent) e;
+                TrackMetadata metadata = MetadataFinder.getInstance().requestMetadataFrom(npe.cdjStatus);
+                logger.info("Song: " + metadata);
+            }
         }
 
 

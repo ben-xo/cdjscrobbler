@@ -1,5 +1,7 @@
 package am.xo.cdjscrobbler;
 
+import am.xo.cdjscrobbler.SongDetails;
+
 import org.deepsymmetry.beatlink.CdjStatus;
 import org.deepsymmetry.beatlink.Util;
 import org.slf4j.Logger;
@@ -24,7 +26,7 @@ public class SongModel {
     final Logger logger = LoggerFactory.getLogger(SongModel.class);
 
     protected int deviceNumber = 0;
-    protected SongDetails song;
+    protected SongDetails song = null;
     protected long totalPlayTime = 0;
     protected SongState currentState = SongState.STARTED;
     protected long lastUpdate = 0;
@@ -42,8 +44,8 @@ public class SongModel {
         SongState prevState = currentState;
         SongEvent yieldedEvent = currentState.applyNext(this, update);
 
-        logger.info(String.format("Device %d rekordbox ID %d %s -> %s (playtime: %d ms)",
-                deviceNumber, rekordboxId, prevState.name(), currentState.name(), totalPlayTime));
+        logger.info(String.format("Device %d rekordbox ID %d %s -> %s for %s",
+                deviceNumber, rekordboxId, prevState.name(), currentState.name(), this));
 
         lastUpdate = update.getTimestamp();
         if(yieldedEvent != null) {
@@ -81,6 +83,12 @@ public class SongModel {
 
     public boolean isPlayingForward(CdjStatus update) {
         return update.isPlaying() && update.getPlayState2() == CdjStatus.PlayState2.MOVING;
+    }
+
+    public String toString() {
+        return "Device " + Integer.toString(deviceNumber) + " " + currentState.name()
+                + " song: " + (song == null ? "<unknown>" : song.toString())
+                + " playtime: " + Long.toString(totalPlayTime) + " ms";
     }
 
 }

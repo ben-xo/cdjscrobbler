@@ -47,7 +47,7 @@ public enum SongState {
                 model.rekordboxId = update.getRekordboxId();
                 if(model.isPastNowPlaying()) {
                     model.currentState = PLAYING;
-                    return new NowPlayingEvent();
+                    return new NowPlayingEvent(model, update);
                 }
             } else {
                 // whilst cueing - any sort of stopping play resets the model.

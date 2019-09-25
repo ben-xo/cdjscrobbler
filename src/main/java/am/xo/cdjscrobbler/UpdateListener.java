@@ -1,6 +1,6 @@
 package am.xo.cdjscrobbler;
+import am.xo.cdjscrobbler.SongEvents.NowPlayingEvent;
 import am.xo.cdjscrobbler.SongEvents.ResetEvent;
-import com.sun.org.glassfish.external.statistics.annotations.Reset;
 import org.deepsymmetry.beatlink.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
