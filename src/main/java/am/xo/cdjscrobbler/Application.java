@@ -44,6 +44,15 @@ public class Application
 
     public void start() throws Exception
     {
+        logger.info("Starting Last.fm Scrobbler…");
+        LastFmClient lfm = new LastFmClient(config);
+        try {
+            lfm.ensureUserIsConnected();
+        } catch(IOException e) {
+            e.printStackTrace();
+            System.exit(1);
+        }
+
         logger.info("Starting DeviceFinder…");
         DeviceFinder.getInstance().start();
         while(DeviceFinder.getInstance().getCurrentDevices().isEmpty()) {
@@ -79,13 +88,18 @@ public class Application
 
         while(true) {
             // TODO: this is the body of QueueProcessor.
-            SongEvent e = songEventQueue.take();
+            SongEvent e = songEventQueue.take(); // this blocks until an event is ready.
             logger.info("Received event " + e);
 
             if(e instanceof NowPlayingEvent) {
+
+                // NowPlaying events indicate that we've played enough of the song to start caring about
+                // what it actually is. (The next state, Scrobbling, depends on knowing the song length)
                 NowPlayingEvent npe = (NowPlayingEvent) e;
                 TrackMetadata metadata = MetadataFinder.getInstance().requestMetadataFrom(npe.cdjStatus);
                 logger.info("Song: " + metadata);
+
+                // save it back to the model so it can be used to determine the scrobble point
                 npe.model.song = new SongDetails(metadata);
             }
         }
