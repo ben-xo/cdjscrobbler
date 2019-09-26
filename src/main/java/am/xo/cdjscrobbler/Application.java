@@ -147,8 +147,8 @@ public class Application
         try (InputStream is = Files.newInputStream(Paths.get(configPath))) {
             config.load(is);
         } catch (IOException ioe) {
-            logger.error("Error loading config properties from {}", configPath, ioe);
             if(isVital) {
+                logger.error("Error loading config properties from {}", configPath, ioe);
                 throw ioe;
             }
         }
