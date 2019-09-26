@@ -102,6 +102,8 @@ public class Application
 
                 // save it back to the model so it can be used to determine the scrobble point
                 npe.model.song = new SongDetails(metadata);
+
+                lfm.updateNowPlaying(npe);
             }
         }
 

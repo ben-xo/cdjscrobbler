@@ -31,6 +31,7 @@ public enum SongState {
             if(model.isPlayingForward(update)) {
                 model.rekordboxId = update.getRekordboxId();
                 model.currentState = CUEING;
+                model.startedAt = System.currentTimeMillis() / 1000;
                 // don't bother with a transition event. Nobody cares
             }
             return null;
@@ -110,7 +111,7 @@ public enum SongState {
             model.addPlaytimeFrom(update);
             if(isStopping(model, update)) {
                 model.currentState = STOPPED;
-                return new ScrobbleEvent(model.song);
+                return new ScrobbleEvent(model, update);
             } else if(!model.isPlayingForward(update)) {
                 model.currentState = SCROBBLINGPAUSED;
                 return new TransitionEvent(SCROBBLING, SCROBBLINGPAUSED);
@@ -129,7 +130,7 @@ public enum SongState {
         public SongEvent applyNext(SongModel model, CdjStatus update) {
             if(isStopping(model, update)) {
                 model.currentState = STOPPED;
-                return new ScrobbleEvent(model.song);
+                return new ScrobbleEvent(model, update);
             } else if(model.isPlayingForward(update)) {
                 model.currentState = SCROBBLING;
                 return new TransitionEvent(SCROBBLINGPAUSED, SCROBBLING);

@@ -29,6 +29,7 @@ public class SongModel {
     protected int deviceNumber = 0;
     protected SongDetails song = null;
     protected long totalPlayTime = 0;
+    protected long startedAt = 0;
     protected SongState currentState = SongState.STARTED;
     protected long lastUpdate = 0;
     protected int rekordboxId = 0;
@@ -66,6 +67,7 @@ public class SongModel {
         song = null;
         rekordboxId = 0;
         totalPlayTime = 0;
+        startedAt = 0;
     }
 
     public void addPlaytimeFrom(CdjStatus update) {
@@ -94,4 +96,11 @@ public class SongModel {
                 + " playtime: " + Long.toString(totalPlayTime) + " ms";
     }
 
+    public SongDetails getSong() {
+        return song;
+    }
+
+    public long getStartedAt() {
+        return startedAt;
+    }
 }

@@ -1,9 +1,14 @@
 package am.xo.cdjscrobbler;
 
+import am.xo.cdjscrobbler.SongEvents.NowPlayingEvent;
+import am.xo.cdjscrobbler.SongEvents.ScrobbleEvent;
 import de.umass.lastfm.Authenticator;
 import de.umass.lastfm.Caller;
 import de.umass.lastfm.Session;
+import de.umass.lastfm.Track;
 import de.umass.lastfm.User;
+import de.umass.lastfm.scrobble.ScrobbleData;
+import de.umass.lastfm.scrobble.ScrobbleResult;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -32,24 +37,23 @@ public class LastFmClient {
     }
 
     public void ensureUserIsConnected() throws IOException {
+        do {
+            if (apiKey.isEmpty() || apiSecret.isEmpty()) {
+                String msg = "You need to put a Last.fm API key and API secret into your config. https://www.last.fm/api";
+                logger.error("Connection to Last.fm failed: {}", msg);
+                throw new IOException(msg);
+            }
 
-        if(apiKey.isEmpty() || apiSecret.isEmpty()) {
-            String msg = "You need to put a Last.fm API key and API secret into your config. https://www.last.fm/api";
-            logger.error("Connection to Last.fm failed: {}", msg);
-            throw new IOException(msg);
-        }
-
-        if(apiSk.isEmpty()) {
-            // trigger auth flow
-            theSession = authorize(apiKey, apiSecret);
-            apiSk = theSession.getKey();
-            saveCredentials(apiSk);
-        } else {
-            logger.info("Restored Last.fm session from saved config");
-            theSession = Session.createSession(apiKey, apiSecret, apiSk);
-        }
-
-        checkValidSession();
+            if (apiSk.isEmpty()) {
+                // trigger auth flow
+                theSession = authorize(apiKey, apiSecret);
+                apiSk = theSession.getKey();
+                saveCredentials(apiSk);
+            } else {
+                logger.info("Restored Last.fm session from saved config");
+                theSession = Session.createSession(apiKey, apiSecret, apiSk);
+            }
+        } while(!isSessionValid(theSession));
     }
 
     public Session authorize(String apiKey, String apiSecret) {
@@ -94,12 +98,55 @@ public class LastFmClient {
         }
     }
 
-    public void checkValidSession() throws IOException {
+    public boolean isSessionValid(Session theSession) throws IOException {
         User u = User.getInfo(theSession);
         if(u == null) {
-            throw new IOException("Invalid last.fm session.");
+            logger.warn("Invalid Last.fm session. Try again.");
+            apiSk = ""; // bin-it
+            return false;
         }
         logger.info("💃 Logged in to Last.fm as {}", u.getName());
+        return true;
     }
 
+    protected ScrobbleData getScrobbleDataFor(SongModel model) {
+        SongDetails song = model.getSong();
+        if(song == null) {
+            // note that this may not be available if metadata lookup failed.
+            return null;
+        }
+        int timestamp = (int) model.getStartedAt(); // cast down because it was originally a long
+        ScrobbleData theScrobble = new ScrobbleData(song.getArtist(), song.getTitle(), timestamp);
+        theScrobble.setAlbum(song.getAlbum());
+        theScrobble.setDuration(song.getDuration());
+        return theScrobble;
+    }
+
+    public void updateNowPlaying(NowPlayingEvent npe) {
+        SongModel model = npe.model;
+        ScrobbleData theScrobble = getScrobbleDataFor(model);
+        if(theScrobble != null) {
+            ScrobbleResult result = Track.updateNowPlaying(theScrobble, theSession);
+            if(result == null) {
+                // todo: retry
+                logger.error("🚫 failed to update 'now playing' {}", model.getSong());
+            } else {
+                logger.info("🎸 now playing {}", model.getSong());
+            }
+        }
+    }
+
+    public void scrobble(ScrobbleEvent e) {
+        SongModel model = e.model;
+        ScrobbleData theScrobble = getScrobbleDataFor(model);
+        if(theScrobble != null) {
+            ScrobbleResult result = Track.updateNowPlaying(theScrobble, theSession);
+            if(result == null) {
+                // todo: retry
+                logger.error("🚫 failed to scrobble {}", model.getSong());
+            } else {
+                logger.info("✨ scrobbled {}", model.getSong());
+            }
+        }
+    }
 }
