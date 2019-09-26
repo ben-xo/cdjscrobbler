@@ -26,7 +26,8 @@ public class Application
     static final Properties config = new Properties();
     static final Application theApplication = new Application();
 
-    static String userCredsFile;
+    static final String localConfigFile = System.getProperty("user.home") + File.separator + "cdjscrobbler.properties";
+    static final String localSessionFile = System.getProperty("user.home") + File.separator + "cdjscrobbler-session.properties";
 
     protected LinkedBlockingQueue<SongEvent> songEventQueue;
     protected UpdateListener updateListener;
@@ -116,28 +117,30 @@ public class Application
 
         // TODO: make fewer assumptions here, but this'll do for now!
 
-        // load default config.
+        // load default (internal) config
         config.load(Application.class.getClassLoader().getResourceAsStream("config.properties"));
 
-        // load e.g. Last.fm credentials.
-        logger.info("Loading user credentials");
-        userCredsFile = System.getProperty("user.home") + File.separator + "cdjscrobbler.properties";
-        try (InputStream is = Files.newInputStream(Paths.get(userCredsFile))) {
-            config.load(is);
-        } catch (IOException ioe) {
-            logger.warn("No saved credentials found in {}", userCredsFile);
-            // move on.
-        }
+        // load e.g. Last.fm api key and secret
+        logger.info("Loading local client configuration");
+        loadConfigFromFile(localConfigFile, false);
+
+        // load e.g. Last.fm session key
+        logger.info("Loading local session configuration");
+        loadConfigFromFile(localSessionFile, false);
 
         // load any config specified on the command line.
         if (args.length > 0) {
-            String configPath = args[0];
-            logger.info("Loading config from " + configPath);
+            loadConfigFromFile(args[0], true);
+        }
+    }
 
-            try (InputStream is = Files.newInputStream(Paths.get(configPath))) {
-                config.load(is);
-            } catch (IOException ioe) {
-                logger.error("Error loading config properties from {}", configPath, ioe);
+    private static void loadConfigFromFile(String configPath, boolean isVital) throws IOException {
+        logger.info("Loading config from " + configPath);
+        try (InputStream is = Files.newInputStream(Paths.get(configPath))) {
+            config.load(is);
+        } catch (IOException ioe) {
+            logger.error("Error loading config properties from {}", configPath, ioe);
+            if(isVital) {
                 throw ioe;
             }
         }

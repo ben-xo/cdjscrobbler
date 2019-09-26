@@ -3,9 +3,12 @@ package am.xo.cdjscrobbler;
 import de.umass.lastfm.Authenticator;
 import de.umass.lastfm.Caller;
 import de.umass.lastfm.Session;
+import de.umass.lastfm.User;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.Properties;
 
@@ -38,14 +41,18 @@ public class LastFmClient {
 
         if(apiSk.isEmpty()) {
             // trigger auth flow
-            theSession = authorize();
+            theSession = authorize(apiKey, apiSecret);
+            apiSk = theSession.getKey();
+            saveCredentials(apiSk);
         } else {
             logger.info("Restored Last.fm session from saved config");
             theSession = Session.createSession(apiKey, apiSecret, apiSk);
         }
+
+        checkValidSession();
     }
 
-    public Session authorize() {
+    public Session authorize(String apiKey, String apiSecret) {
         String token = Authenticator.getToken(apiKey);
 
         Session session;
@@ -55,9 +62,9 @@ public class LastFmClient {
 
             // repeated in the loop because otherwise lastfm-java's logging scrolls it out of view.
             logger.info("💯 You must now visit https://www.last.fm/api/auth/?api_key={}&token={}", apiKey, token);
-            logger.info("❓ Waiting for authorization…");
 
             try {
+                logger.info("❓ Waiting for authorization…");
                 Thread.sleep(5000);
             } catch(InterruptedException e) {
                 // so what.
@@ -72,6 +79,27 @@ public class LastFmClient {
             waitLoopCount++;
         }
         throw new RuntimeException("Gave up waiting for you to authorize to Last.fm.");
+    }
+
+    public void saveCredentials(String apiSk) {
+        try {
+            Properties p = new Properties();
+            p.setProperty("lastfm.api.sk", apiSk);
+            FileOutputStream writer = new FileOutputStream(Application.localSessionFile);
+            p.store(writer, null);
+            writer.close();
+        } catch (IOException ex) {
+            logger.error("🚫 Saving credentials failed!", ex);
+            // carry on anyway
+        }
+    }
+
+    public void checkValidSession() throws IOException {
+        User u = User.getInfo(theSession);
+        if(u == null) {
+            throw new IOException("Invalid last.fm session.");
+        }
+        logger.info("💃 Logged in to Last.fm as {}", u.getName());
     }
 
 }
