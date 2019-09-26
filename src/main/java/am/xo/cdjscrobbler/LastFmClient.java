@@ -140,7 +140,7 @@ public class LastFmClient {
         SongModel model = e.model;
         ScrobbleData theScrobble = getScrobbleDataFor(model);
         if(theScrobble != null) {
-            ScrobbleResult result = Track.updateNowPlaying(theScrobble, theSession);
+            ScrobbleResult result = Track.scrobble(theScrobble, theSession);
             if(result == null) {
                 // todo: retry
                 logger.error("🚫 failed to scrobble {}", model.getSong());
