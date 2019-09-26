@@ -1,6 +1,7 @@
 package am.xo.cdjscrobbler;
 import am.xo.cdjscrobbler.SongEvents.NowPlayingEvent;
 import am.xo.cdjscrobbler.SongEvents.ResetEvent;
+import am.xo.cdjscrobbler.SongEvents.ScrobbleEvent;
 import org.deepsymmetry.beatlink.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -55,7 +56,8 @@ public class UpdateListener implements DeviceUpdateListener {
                         // we only want to put now playing and scrobble events here…
                         logger.info("Device " + deviceNumber + " sending event " + e);
                         songEventQueue.put(e);
-                        if(e instanceof ResetEvent) {
+                        if(e instanceof ResetEvent || e instanceof ScrobbleEvent) {
+                            // Both Reset and Scrobble mean we reached the end of the song.
                             models[deviceNumber] = new SongModel(deviceNumber);
                         }
                     } catch (InterruptedException ex) {
