@@ -8,6 +8,7 @@ import org.deepsymmetry.beatlink.data.TrackMetadata;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
@@ -24,6 +25,8 @@ public class Application
     static final Logger logger = LoggerFactory.getLogger(Application.class);
     static final Properties config = new Properties();
     static final Application theApplication = new Application();
+
+    static String userCredsFile;
 
     protected LinkedBlockingQueue<SongEvent> songEventQueue;
     protected UpdateListener updateListener;
@@ -95,9 +98,22 @@ public class Application
 
     private static void loadConfig(String[] args) throws IOException {
 
+        // TODO: make fewer assumptions here, but this'll do for now!
+
         // load default config.
         config.load(Application.class.getClassLoader().getResourceAsStream("config.properties"));
 
+        // load e.g. Last.fm credentials.
+        logger.info("Loading user credentials");
+        userCredsFile = System.getProperty("user.home") + File.separator + "cdjscrobbler.properties";
+        try (InputStream is = Files.newInputStream(Paths.get(userCredsFile))) {
+            config.load(is);
+        } catch (IOException ioe) {
+            logger.warn("No saved credentials found in {}", userCredsFile);
+            // move on.
+        }
+
+        // load any config specified on the command line.
         if (args.length > 0) {
             String configPath = args[0];
             logger.info("Loading config from " + configPath);
