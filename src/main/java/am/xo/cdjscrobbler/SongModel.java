@@ -48,8 +48,7 @@ public class SongModel {
         if(prevState != currentState || currentState.isMoving() ) {
             // only log transitions and playing states - a lot of boring STOPPED messages otherwise
 
-            logger.info(String.format("Device %d rekordbox ID %d %s -> %s",
-                    deviceNumber, rekordboxId, prevState.name(), this));
+            logger.info("Device {} rekordbox ID {} {} -> {}", deviceNumber, rekordboxId, prevState.name(), this);
         }
 
         lastUpdate = update.getTimestamp();

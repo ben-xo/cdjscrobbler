@@ -8,6 +8,11 @@ import org.deepsymmetry.beatlink.data.TrackMetadata;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.IOException;
+import java.io.InputStream;
+import java.nio.file.Files;
+import java.nio.file.Paths;
+import java.util.Properties;
 import java.util.concurrent.LinkedBlockingQueue;
 
 /**
@@ -16,7 +21,9 @@ import java.util.concurrent.LinkedBlockingQueue;
  */
 public class Application
 {
-    final Logger logger = LoggerFactory.getLogger(Application.class);
+    static final Logger logger = LoggerFactory.getLogger(Application.class);
+    static final Properties config = new Properties();
+    static final Application theApplication = new Application();
 
     protected LinkedBlockingQueue<SongEvent> songEventQueue;
     protected UpdateListener updateListener;
@@ -24,11 +31,11 @@ public class Application
 
     public static void main( String[] args ) throws Exception
     {
-        Application theApplication = new Application();
-        theApplication.start(args);
+        loadConfig(args);
+        theApplication.start();
     }
 
-    public void start( String[] args ) throws Exception
+    public void start() throws Exception
     {
         logger.info( "Starting CDJ Scrobbler" );
 
@@ -51,9 +58,6 @@ public class Application
             virtualCdj.setDeviceNumber((byte) 4);
         }
 
-
-//        System.exit(-1);
-
         logger.info("Starting MetadataFinder…");
         MetadataFinder.getInstance().start();
 
@@ -69,6 +73,7 @@ public class Application
 //        queueProcessor = new QueueProcessor(songEventQueue);
 
         while(true) {
+            // TODO: this is the body of QueueProcessor.
             SongEvent e = songEventQueue.take();
             logger.info("Received event " + e);
 
@@ -86,5 +91,23 @@ public class Application
         // TODO: create a state machine
 
         // TODO: model "more than half way" ? Adjustable? How much needs to be played to count?
+    }
+
+    private static void loadConfig(String[] args) throws IOException {
+
+        // load default config.
+        config.load(Application.class.getClassLoader().getResourceAsStream("config.properties"));
+
+        if (args.length > 0) {
+            String configPath = args[0];
+            logger.info("Loading config from " + configPath);
+
+            try (InputStream is = Files.newInputStream(Paths.get(configPath))) {
+                config.load(is);
+            } catch (IOException ioe) {
+                logger.error("Error loading config properties from {}", configPath, ioe);
+                throw ioe;
+            }
+        }
     }
 }
