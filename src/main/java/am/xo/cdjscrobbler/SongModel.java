@@ -1,7 +1,5 @@
 package am.xo.cdjscrobbler;
 
-import am.xo.cdjscrobbler.SongDetails;
-
 import org.deepsymmetry.beatlink.CdjStatus;
 import org.deepsymmetry.beatlink.Util;
 import org.slf4j.Logger;
@@ -11,7 +9,10 @@ import java.util.ArrayList;
 
 public class SongModel {
 
-    static final int NOW_PLAYING_POINT = 10000; // milliseconds (e.g. 30000 = 30 seconds
+    /**
+     * After NOW_PLAYING_POINT_MS of continuous playback, we start recording the song playtime.
+     */
+    static final int NOW_PLAYING_POINT_MS = 10000; // milliseconds (e.g. 30000 = 30 seconds)
 
     /**
      *   which device 			<- CdjStatus.getTrackSourcePlayer()
@@ -44,15 +45,18 @@ public class SongModel {
         SongState prevState = currentState;
         SongEvent yieldedEvent = currentState.applyNext(this, update);
 
-        logger.info(String.format("Device %d rekordbox ID %d %s -> %s",
-                deviceNumber, rekordboxId, prevState.name(), this));
+        if(prevState != currentState || currentState.isMoving() ) {
+            // only log transitions and playing states - a lot of boring STOPPED messages otherwise
+
+            logger.info(String.format("Device %d rekordbox ID %d %s -> %s",
+                    deviceNumber, rekordboxId, prevState.name(), this));
+        }
 
         lastUpdate = update.getTimestamp();
         if(yieldedEvent != null) {
             logger.debug("yielded " + yieldedEvent.getClass().getSimpleName());
             // must apply continuously to catch all events in sequence.
             // this could happen if a single event increments time by a large amount.
-            // (TODO: Yeah, this could be a loop)
             returnedEvents.add(yieldedEvent);
             return update(update, returnedEvents);
         }
@@ -69,12 +73,12 @@ public class SongModel {
         if(lastUpdate != 0 && isPlayingForward(update)) {
             long nanosToAdd = update.getTimestamp() - lastUpdate;
             double tempo = Util.pitchToMultiplier(update.getPitch());
-            totalPlayTime += tempo * (nanosToAdd / 1000000);
+            totalPlayTime += tempo * nanosToAdd / 1000000;
         }
     }
 
     public boolean isPastNowPlaying() {
-        return totalPlayTime >= NOW_PLAYING_POINT; // 30s
+        return totalPlayTime >= NOW_PLAYING_POINT_MS;
     }
 
     public boolean isPastScrobblePoint() {
@@ -87,7 +91,7 @@ public class SongModel {
 
     public String toString() {
         return "Device " + Integer.toString(deviceNumber) + " " + currentState.name()
-                + " song: " + (song == null ? "<unknown>" : song.toString())
+                + " song: " + (song == null ? "<unknown>" : song)
                 + " playtime: " + Long.toString(totalPlayTime) + " ms";
     }
 

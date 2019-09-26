@@ -28,7 +28,7 @@ public enum SongState {
     STARTED {
         @Override
         public SongEvent applyNext(SongModel model, CdjStatus update) {
-            if(update.isPlaying() && update.getPlayState2() == CdjStatus.PlayState2.MOVING) {
+            if(model.isPlayingForward(update)) {
                 model.rekordboxId = update.getRekordboxId();
                 model.currentState = CUEING;
                 // don't bother with a transition event. Nobody cares
@@ -41,7 +41,7 @@ public enum SongState {
         @Override
         public SongEvent applyNext(SongModel model, CdjStatus update) {
             model.addPlaytimeFrom(update);
-            if(update.isPlaying() && update.getPlayState2() == CdjStatus.PlayState2.MOVING) {
+            if(model.isPlayingForward(update)) {
                 // we'll take whatever it is, at this point.
                 // we don't try resolve any metadata until after the now playing point anyway
                 model.rekordboxId = update.getRekordboxId();
@@ -57,6 +57,11 @@ public enum SongState {
                 // don't bother with a transition event. Nobody cares
             }
             return null;
+        }
+
+        @Override
+        public boolean isMoving() {
+            return true;
         }
     },
 
@@ -77,6 +82,11 @@ public enum SongState {
                 return new TransitionEvent(PLAYING, PLAYINGPAUSED);
             }
             return null;
+        }
+
+        @Override
+        public boolean isMoving() {
+            return true;
         }
     },
 
@@ -106,6 +116,11 @@ public enum SongState {
                 return new TransitionEvent(SCROBBLING, SCROBBLINGPAUSED);
             }
             return null;
+        }
+
+        @Override
+        public boolean isMoving() {
+            return true;
         }
     },
 
@@ -142,4 +157,9 @@ public enum SongState {
     public boolean isStopping(SongModel model, CdjStatus update) {
         return update.isAtEnd() || !update.isTrackLoaded() || update.getRekordboxId() != model.rekordboxId;
     }
+
+    /**
+     * @return true if the current state represents playback
+     */
+    public boolean isMoving() { return false; }
 }

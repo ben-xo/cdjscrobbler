@@ -67,9 +67,11 @@ public class Application
 
         logger.info( "Starting QueueProcessor…" );
 //        queueProcessor = new QueueProcessor(songEventQueue);
+
         while(true) {
             SongEvent e = songEventQueue.take();
             logger.info("Received event " + e);
+
             if(e instanceof NowPlayingEvent) {
                 NowPlayingEvent npe = (NowPlayingEvent) e;
                 TrackMetadata metadata = MetadataFinder.getInstance().requestMetadataFrom(npe.cdjStatus);
@@ -78,7 +80,7 @@ public class Application
             }
         }
 
-
+        // TODO: add a Lifecycle handler that shuts down when everything else shuts down
 
         // TODO: create a scrobbling adaptor
         // TODO: create a state machine
