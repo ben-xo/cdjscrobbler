@@ -5,6 +5,14 @@
   <artifactId>cdjscrobbler</artifactId>
   <packaging>jar</packaging>
   <version>1.0-SNAPSHOT</version>
+  <repositories>
+    <repository>
+      <!-- required because there is no official release of lastfm-java with
+           HTTPS support, even though it's on github -->
+      <id>jitpack.io</id>
+      <url>https://jitpack.io</url>
+    </repository>
+  </repositories>
   <build>
     <resources>
       <resource>
@@ -60,10 +68,21 @@
       <artifactId>beat-link</artifactId>
       <version>0.4.1</version>
     </dependency>
+    <!--
+      ⚠️  Note ⚠️  lastfm-java 0.1.2 does not have HTTPS. So instead of depending on the latest mvn version (from 2012),
+      we depend on latest github master (which only 4 commits ahead)
+    -->
+    <!--
     <dependency>
       <groupId>de.u-mass</groupId>
       <artifactId>lastfm-java</artifactId>
       <version>0.1.2</version>
+    </dependency>
+    -->
+    <dependency>
+      <groupId>com.github.jkovacs</groupId>
+      <artifactId>lastfm-java</artifactId>
+      <version>2cc381683ceae99606b9becdaffc6727e2dcd561</version>
     </dependency>
     <dependency>
       <groupId>junit</groupId>
