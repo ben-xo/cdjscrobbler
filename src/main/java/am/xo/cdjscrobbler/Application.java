@@ -35,13 +35,15 @@ public class Application
     public static void main( String[] args ) throws Exception
     {
         loadConfig(args);
+
+        logger.info( "💿📀💿📀 CDJ Scrobbler v{} by Ben XO", config.getProperty("cdjscrobbler.version"));
+        logger.info( "💿📀💿📀 https://github.com/ben-xo/cdjscrobbler");
+
         theApplication.start();
     }
 
     public void start() throws Exception
     {
-        logger.info( "Starting CDJ Scrobbler" );
-
         logger.info("Starting DeviceFinder…");
         DeviceFinder.getInstance().start();
         while(DeviceFinder.getInstance().getCurrentDevices().isEmpty()) {
