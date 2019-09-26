@@ -1,6 +1,7 @@
 package am.xo.cdjscrobbler;
 
 import am.xo.cdjscrobbler.SongEvents.NowPlayingEvent;
+import am.xo.cdjscrobbler.SongEvents.ScrobbleEvent;
 import org.deepsymmetry.beatlink.*;
 import org.deepsymmetry.beatlink.data.MetadataFinder;
 
@@ -89,21 +90,26 @@ public class Application
 
         while(true) {
             // TODO: this is the body of QueueProcessor.
-            SongEvent e = songEventQueue.take(); // this blocks until an event is ready.
-            logger.info("Received event " + e);
+            SongEvent songEvent = songEventQueue.take(); // this blocks until an event is ready.
+            logger.info("Received event " + songEvent);
 
-            if(e instanceof NowPlayingEvent) {
+            if(songEvent instanceof NowPlayingEvent) {
 
                 // NowPlaying events indicate that we've played enough of the song to start caring about
                 // what it actually is. (The next state, Scrobbling, depends on knowing the song length)
-                NowPlayingEvent npe = (NowPlayingEvent) e;
-                TrackMetadata metadata = MetadataFinder.getInstance().requestMetadataFrom(npe.cdjStatus);
+                NowPlayingEvent nowPlayingEvent = (NowPlayingEvent) songEvent;
+                TrackMetadata metadata = MetadataFinder.getInstance().requestMetadataFrom(nowPlayingEvent.cdjStatus);
                 logger.info("Song: " + metadata);
 
                 // save it back to the model so it can be used to determine the scrobble point
-                npe.model.song = new SongDetails(metadata);
+                nowPlayingEvent.model.song = new SongDetails(metadata);
 
-                lfm.updateNowPlaying(npe);
+                lfm.updateNowPlaying(nowPlayingEvent);
+
+            } else if(songEvent instanceof ScrobbleEvent) {
+
+                ScrobbleEvent scrobbleEvent = (ScrobbleEvent) songEvent;
+                lfm.scrobble(scrobbleEvent);
             }
         }
 
