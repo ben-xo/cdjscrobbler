@@ -33,7 +33,7 @@ public class Application
 
     protected LinkedBlockingQueue<SongEvent> songEventQueue;
     protected UpdateListener updateListener;
-//    protected QueueProcessor queueProcessor;
+    protected QueueProcessor queueProcessor;
 
     public static void main( String[] args ) throws Exception
     {
@@ -96,32 +96,9 @@ public class Application
         VirtualCdj.getInstance().addUpdateListener(updateListener);
 
         logger.info( "Starting QueueProcessor…" );
-//        queueProcessor = new QueueProcessor(songEventQueue);
-
-        while(true) {
-            // TODO: this is the body of QueueProcessor.
-            SongEvent songEvent = songEventQueue.take(); // this blocks until an event is ready.
-            logger.info("Received event " + songEvent);
-
-            if(songEvent instanceof NowPlayingEvent) {
-
-                // NowPlaying events indicate that we've played enough of the song to start caring about
-                // what it actually is. (The next state, Scrobbling, depends on knowing the song length)
-                NowPlayingEvent nowPlayingEvent = (NowPlayingEvent) songEvent;
-                TrackMetadata metadata = MetadataFinder.getInstance().requestMetadataFrom(nowPlayingEvent.cdjStatus);
-                logger.info("Song: " + metadata);
-
-                // save it back to the model so it can be used to determine the scrobble point
-                nowPlayingEvent.model.song = new SongDetails(metadata);
-
-                lfm.updateNowPlaying(nowPlayingEvent);
-
-            } else if(songEvent instanceof ScrobbleEvent) {
-
-                ScrobbleEvent scrobbleEvent = (ScrobbleEvent) songEvent;
-                lfm.scrobble(scrobbleEvent);
-            }
-        }
+        queueProcessor = new QueueProcessor(songEventQueue);
+        queueProcessor.setLfm(lfm);
+        queueProcessor.start(); // this doesn't return until shutdown (or exception)
 
         // TODO: add a Lifecycle handler that shuts down when everything else shuts down
 
