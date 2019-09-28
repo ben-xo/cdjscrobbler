@@ -106,9 +106,14 @@
       <version>2cc381683ceae99606b9becdaffc6727e2dcd561</version>
     </dependency>
     <dependency>
+      <groupId>com.github.scribejava</groupId>
+      <artifactId>scribejava-apis</artifactId>
+      <version>6.8.1</version>
+    </dependency>
+    <dependency>
       <groupId>org.twitter4j</groupId>
       <artifactId>twitter4j-core</artifactId>
-      <version>[4.0,)</version>
+      <version>4.0.7</version>
     </dependency>
     <dependency>
       <groupId>junit</groupId>
