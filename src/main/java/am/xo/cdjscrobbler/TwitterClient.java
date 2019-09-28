@@ -8,7 +8,9 @@ import com.github.scribejava.core.oauth.OAuth10aService;
 import com.sun.xml.internal.ws.policy.privateutil.PolicyUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.slf4j.helpers.MessageFormatter;
 import twitter4j.Twitter;
+import twitter4j.TwitterException;
 import twitter4j.TwitterFactory;
 import twitter4j.conf.ConfigurationBuilder;
 
@@ -128,7 +130,15 @@ public class TwitterClient {
     }
 
     public void sendNowPlaying(NowPlayingEvent npe) {
-        // TODO: finish
+        Twitter twitter = getTwitterFromConfig();
+        SongDetails song = npe.model.getSong();
+        String[] params = { song.getFullTitle() };
+        try {
+            twitter.tweets().updateStatus(MessageFormatter.arrayFormat(config.getTweetTemplate(), params).getMessage());
+            logger.info("🎸 now playing {}", song);
+        } catch(TwitterException e) {
+            logger.error("🚫 failed to tweet 'now playing': {}", e.getMessage());
+        }
     }
 
     /**

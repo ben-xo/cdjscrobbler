@@ -98,6 +98,7 @@ public class Application
         logger.info( "Starting QueueProcessor…" );
         queueProcessor = new QueueProcessor(songEventQueue);
         queueProcessor.setLfm(lfm);
+        queueProcessor.setTwitter(twitter);
         queueProcessor.start(); // this doesn't return until shutdown (or exception)
 
         // TODO: add a Lifecycle handler that shuts down when everything else shuts down
