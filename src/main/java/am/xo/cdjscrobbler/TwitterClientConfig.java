@@ -47,7 +47,7 @@ public class TwitterClientConfig {
 
     public void assertConfigured() throws IOException {
         if (oauthConsumerKey.isEmpty() || oauthConsumerSecret.isEmpty()) {
-            String msg = "You need to put a Last.fm API key and API secret into your config. https://www.last.fm/api";
+            String msg = "You need to put a Twitter OAuth key and secret into your config. https://developer.twitter.com";
             throw new IOException(msg);
         }
     }
