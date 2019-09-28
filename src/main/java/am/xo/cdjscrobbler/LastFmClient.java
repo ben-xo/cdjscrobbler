@@ -86,7 +86,7 @@ public class LastFmClient {
         try {
             Properties p = new Properties();
             p.setProperty("lastfm.api.sk", apiSk);
-            FileOutputStream writer = new FileOutputStream(Main.localSessionFile);
+            FileOutputStream writer = new FileOutputStream(Application.localSessionFile);
             p.store(writer, null);
             writer.close();
         } catch (IOException ex) {

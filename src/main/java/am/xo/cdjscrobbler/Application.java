@@ -23,11 +23,11 @@ import java.util.concurrent.LinkedBlockingQueue;
  * TODO: sort out the configuration mess
  *
  */
-public class Main
+public class Application
 {
-    static final Logger logger = LoggerFactory.getLogger(Main.class);
+    static final Logger logger = LoggerFactory.getLogger(Application.class);
     static final Properties config = new Properties();
-    static final Main theApplication = new Main();
+    static final Application theApplication = new Application();
 
     static final String localConfigFile = System.getProperty("user.home") + File.separator + "cdjscrobbler.properties";
     static final String localSessionFile = System.getProperty("user.home") + File.separator + "cdjscrobbler-session.properties";
@@ -137,7 +137,7 @@ public class Main
         // TODO: make fewer assumptions here, but this'll do for now!
 
         // load default (internal) config
-        config.load(Main.class.getClassLoader().getResourceAsStream("config.properties"));
+        config.load(Application.class.getClassLoader().getResourceAsStream("config.properties"));
 
         // load e.g. Last.fm api key and secret
         logger.info("Loading local client configuration");
