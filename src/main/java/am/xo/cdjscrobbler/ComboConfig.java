@@ -27,6 +27,7 @@ public class ComboConfig extends Properties {
      * @param inStream
      * @throws IOException
      */
+    @Override
     public synchronized void load(InputStream inStream) throws IOException {
         Properties p = new Properties();
         p.load(inStream);
@@ -40,6 +41,7 @@ public class ComboConfig extends Properties {
      * @param comments
      * @throws IOException
      */
+    @Override
     public void store(OutputStream out, String comments)
             throws IOException {
         configs.get(0).store(out, comments);
@@ -58,11 +60,16 @@ public class ComboConfig extends Properties {
     public String getProperty(String key, String defaultValue) {
         for(Properties p: configs) {
             String val = p.getProperty(key);
-            if(val != null || val.isEmpty()) {
+            if(val != null && !val.isEmpty()) {
                 return val;
             }
         }
         return defaultValue;
+    }
+
+    @Override
+    public String getProperty(String key) {
+        return getProperty(key, null);
     }
 
     /**
@@ -76,7 +83,7 @@ public class ComboConfig extends Properties {
     public synchronized Object setProperty(String key, String value) {
         for(Properties p: configs) {
             String prevVal = p.getProperty(key);
-            if(prevVal != null || prevVal.isEmpty()) {
+            if(prevVal != null && !prevVal.isEmpty()) {
                 return p.setProperty(key, value);
             }
         }
