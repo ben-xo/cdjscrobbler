@@ -26,11 +26,10 @@ import java.util.concurrent.LinkedBlockingQueue;
 public class Application
 {
     static final Logger logger = LoggerFactory.getLogger(Application.class);
-    static final Properties config = new Properties();
+    static final ComboConfig config = new ComboConfig();
     static final Application theApplication = new Application();
 
     static final String localConfigFile = System.getProperty("user.home") + File.separator + "cdjscrobbler.properties";
-    static final String localSessionFile = System.getProperty("user.home") + File.separator + "cdjscrobbler-session.properties";
 
     protected LinkedBlockingQueue<SongEvent> songEventQueue;
     protected UpdateListener updateListener;
@@ -59,12 +58,12 @@ public class Application
 
         logger.info("Starting Twitter bot…");
         //TwitterClient twitter = new TwitterClient(new TwitterClientConfig(config));
-        try {
-            lfm.ensureUserIsConnected();
-        } catch(IOException e) {
-            e.printStackTrace();
-            System.exit(1);
-        }
+//        try {
+//            lfm.ensureUserIsConnected();
+//        } catch(IOException e) {
+//            e.printStackTrace();
+//            System.exit(1);
+//        }
 
         logger.info("Starting DeviceFinder…");
         DeviceFinder.getInstance().start();
@@ -139,27 +138,18 @@ public class Application
         // load default (internal) config
         config.load(Application.class.getClassLoader().getResourceAsStream("config.properties"));
 
-        // load e.g. Last.fm api key and secret
+        // load e.g. Last.fm and Twitter keys and tokens
         logger.info("Loading local client configuration");
-        loadConfigFromFile(localConfigFile, false);
-
-        // load e.g. Last.fm session key
-        logger.info("Loading local session configuration");
-        loadConfigFromFile(localSessionFile, false);
+        ConfigFileUtil.maybeLoad(config, localConfigFile);
 
         // load any config specified on the command line.
         if (args.length > 0) {
-            loadConfigFromFile(args[0], true);
-        }
-    }
-
-    private static void loadConfigFromFile(String configPath, boolean isVital) throws IOException {
-        logger.info("Loading config from " + configPath);
-        try (InputStream is = Files.newInputStream(Paths.get(configPath))) {
-            config.load(is);
-        } catch (IOException ioe) {
-            if(isVital) {
-                logger.error("Error loading config properties from {}", configPath, ioe);
+            String extraConfigFile =  args[0];
+            logger.info("Loading config from " + extraConfigFile);
+            try {
+                ConfigFileUtil.load(config, extraConfigFile);
+            } catch (IOException ioe) {
+                logger.error("Error loading config properties from {}", extraConfigFile, ioe);
                 throw ioe;
             }
         }

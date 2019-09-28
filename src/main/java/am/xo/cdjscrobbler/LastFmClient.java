@@ -35,10 +35,11 @@ public class LastFmClient {
         String apiSk = config.getApiSk();
 
         do {
-            if (apiKey.isEmpty() || apiSecret.isEmpty()) {
-                String msg = "You need to put a Last.fm API key and API secret into your config. https://www.last.fm/api";
-                logger.error("Connection to Last.fm failed: {}", msg);
-                throw new IOException(msg);
+            try {
+                config.assertConfigured();
+            } catch(IOException ioe) {
+                logger.error("Connection to Last.fm failed: {}", ioe.getMessage());
+                throw ioe;
             }
 
             if (apiSk.isEmpty()) {
@@ -84,11 +85,8 @@ public class LastFmClient {
 
     public void saveCredentials(String apiSk) {
         try {
-            Properties p = new Properties();
-            p.setProperty("lastfm.api.sk", apiSk);
-            FileOutputStream writer = new FileOutputStream(Application.localSessionFile);
-            p.store(writer, null);
-            writer.close();
+            Application.config.setProperty("lastfm.api.sk", apiSk);
+            ConfigFileUtil.save(Application.config, Application.localConfigFile);
         } catch (IOException ex) {
             logger.error("🚫 Saving credentials failed!", ex);
             // carry on anyway
