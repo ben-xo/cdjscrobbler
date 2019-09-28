@@ -20,12 +20,14 @@ import java.util.concurrent.LinkedBlockingQueue;
 /**
  * Hello world!
  *
+ * TODO: sort out the configuration mess
+ *
  */
-public class Application
+public class Main
 {
-    static final Logger logger = LoggerFactory.getLogger(Application.class);
+    static final Logger logger = LoggerFactory.getLogger(Main.class);
     static final Properties config = new Properties();
-    static final Application theApplication = new Application();
+    static final Main theApplication = new Main();
 
     static final String localConfigFile = System.getProperty("user.home") + File.separator + "cdjscrobbler.properties";
     static final String localSessionFile = System.getProperty("user.home") + File.separator + "cdjscrobbler-session.properties";
@@ -47,7 +49,16 @@ public class Application
     public void start() throws Exception
     {
         logger.info("Starting Last.fm Scrobbler…");
-        LastFmClient lfm = new LastFmClient(config);
+        LastFmClient lfm = new LastFmClient(new LastFmClientConfig(config));
+        try {
+            lfm.ensureUserIsConnected();
+        } catch(IOException e) {
+            e.printStackTrace();
+            System.exit(1);
+        }
+
+        logger.info("Starting Twitter bot…");
+        //TwitterClient twitter = new TwitterClient(new TwitterClientConfig(config));
         try {
             lfm.ensureUserIsConnected();
         } catch(IOException e) {
@@ -126,7 +137,7 @@ public class Application
         // TODO: make fewer assumptions here, but this'll do for now!
 
         // load default (internal) config
-        config.load(Application.class.getClassLoader().getResourceAsStream("config.properties"));
+        config.load(Main.class.getClassLoader().getResourceAsStream("config.properties"));
 
         // load e.g. Last.fm api key and secret
         logger.info("Loading local client configuration");

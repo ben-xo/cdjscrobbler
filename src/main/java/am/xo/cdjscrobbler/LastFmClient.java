@@ -12,7 +12,6 @@ import de.umass.lastfm.scrobble.ScrobbleResult;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.Properties;
@@ -21,22 +20,20 @@ public class LastFmClient {
 
     static final Logger logger = LoggerFactory.getLogger(LastFmClient.class);
 
-    Session theSession;
+    private Session theSession;
+    private LastFmClientConfig config;
 
-    private String apiKey    = "";
-    private String apiSecret = "";
-    private String apiSk     = "";
-
-    public LastFmClient(Properties config) {
-
-        apiKey    = config.getProperty("lastfm.api.key", "");
-        apiSecret = config.getProperty("lastfm.api.secret", "");
-        apiSk     = config.getProperty("lastfm.api.sk", "");
-
-        Caller.getInstance().setUserAgent(config.getProperty("cdjscrobbler.useragent", "CDJ Scrobbler"));
+    public LastFmClient(LastFmClientConfig config) {
+        this.config = config;
+        Caller.getInstance().setUserAgent(config.getUserAgent());
     }
 
     public void ensureUserIsConnected() throws IOException {
+
+        String apiKey = config.getApiKey();
+        String apiSecret = config.getApiSecret();
+        String apiSk = config.getApiSk();
+
         do {
             if (apiKey.isEmpty() || apiSecret.isEmpty()) {
                 String msg = "You need to put a Last.fm API key and API secret into your config. https://www.last.fm/api";
@@ -89,7 +86,7 @@ public class LastFmClient {
         try {
             Properties p = new Properties();
             p.setProperty("lastfm.api.sk", apiSk);
-            FileOutputStream writer = new FileOutputStream(Application.localSessionFile);
+            FileOutputStream writer = new FileOutputStream(Main.localSessionFile);
             p.store(writer, null);
             writer.close();
         } catch (IOException ex) {
@@ -102,7 +99,7 @@ public class LastFmClient {
         User u = User.getInfo(theSession);
         if(u == null) {
             logger.warn("Invalid Last.fm session. Try again.");
-            apiSk = ""; // bin-it
+            config.setApiSk(""); // bin-it
             return false;
         }
         logger.info("💃 Logged in to Last.fm as {}", u.getName());

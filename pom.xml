@@ -30,7 +30,7 @@
             <manifest>
               <addClasspath>true</addClasspath>
               <classpathPrefix>lib/</classpathPrefix>
-              <mainClass>am.xo.cdjscrobbler.Application</mainClass>
+              <mainClass>am.xo.cdjscrobbler.Main</mainClass>
             </manifest>
           </archive>
         </configuration>
@@ -65,7 +65,7 @@
             <manifest>
               <addClasspath>true</addClasspath>
               <classpathPrefix>lib/</classpathPrefix>
-              <mainClass>am.xo.cdjscrobbler.Application</mainClass>
+              <mainClass>am.xo.cdjscrobbler.Main</mainClass>
             </manifest>
           </archive>
         </configuration>
