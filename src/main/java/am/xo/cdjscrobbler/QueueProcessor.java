@@ -17,6 +17,7 @@ public class QueueProcessor {
 
     // TODO: generify this to decouple.
     private LastFmClient lfm;
+    private TwitterClient twitter;
 
     public QueueProcessor(LinkedBlockingQueue<SongEvent> songEvents) {
         this.songEventQueue = songEvents;
@@ -39,6 +40,7 @@ public class QueueProcessor {
                 nowPlayingEvent.model.song = new SongDetails(metadata);
 
                 lfm.updateNowPlaying(nowPlayingEvent);
+                twitter.sendNowPlaying(nowPlayingEvent);
 
             } else if(songEvent instanceof ScrobbleEvent) {
 
@@ -50,5 +52,9 @@ public class QueueProcessor {
 
     public void setLfm(LastFmClient lfm) {
         this.lfm = lfm;
+    }
+
+    public void setTwitter(TwitterClient t) {
+        this.twitter = t;
     }
 }

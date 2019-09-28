@@ -9,6 +9,7 @@ public class TwitterClientConfig {
     private String oauthConsumerSecret;
     private String oauthAccessToken;
     private String oauthAccessTokenSecret;
+    private String tweetTemplate;
     private String userAgent;
 
     public TwitterClientConfig(Properties config) {
@@ -16,6 +17,7 @@ public class TwitterClientConfig {
         oauthConsumerSecret    = config.getProperty("twitter4j.oauth.consumerSecret", "");
         oauthAccessToken       = config.getProperty("twitter4j.oauth.accessToken","");
         oauthAccessTokenSecret = config.getProperty("twitter4j.oauth.accessTokenSecret", "");
+        tweetTemplate          = config.getProperty("cdjscrobbler.tweet.template", "Now Playing: {}");
         userAgent              = config.getProperty("cdjscrobbler.useragent", "CDJ Scrobbler");
     }
 
@@ -37,6 +39,10 @@ public class TwitterClientConfig {
 
     public String getOAuthAccessTokenSecret() {
         return oauthAccessTokenSecret;
+    }
+
+    public String getTweetTemplate() {
+        return tweetTemplate;
     }
 
     public void assertConfigured() throws IOException {

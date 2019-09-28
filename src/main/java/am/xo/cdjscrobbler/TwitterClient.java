@@ -1,5 +1,6 @@
 package am.xo.cdjscrobbler;
 
+import am.xo.cdjscrobbler.SongEvents.NowPlayingEvent;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import twitter4j.Twitter;
@@ -42,6 +43,10 @@ public class TwitterClient {
 //                theSession = Session.createSession(apiKey, apiSecret, apiSk);
 //            }
 //        } while(!isSessionValid(theSession));
+    }
+
+    public void sendNowPlaying(NowPlayingEvent npe) {
+        // TODO: finish
     }
 
     /**
