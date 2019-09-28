@@ -57,13 +57,13 @@ public class Application
         }
 
         logger.info("Starting Twitter bot…");
-        //TwitterClient twitter = new TwitterClient(new TwitterClientConfig(config));
-//        try {
-//            lfm.ensureUserIsConnected();
-//        } catch(IOException e) {
-//            e.printStackTrace();
-//            System.exit(1);
-//        }
+        TwitterClient twitter = new TwitterClient(new TwitterClientConfig(config));
+        try {
+            twitter.ensureUserIsConnected();
+        } catch(IOException e) {
+            e.printStackTrace();
+            System.exit(1);
+        }
 
         logger.info("Starting DeviceFinder…");
         DeviceFinder.getInstance().start();

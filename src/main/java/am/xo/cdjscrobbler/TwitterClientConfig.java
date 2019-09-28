@@ -51,4 +51,12 @@ public class TwitterClientConfig {
             throw new IOException(msg);
         }
     }
+
+    public void setOauthAccessToken(String oauthAccessToken) {
+        this.oauthAccessToken = oauthAccessToken;
+    }
+
+    public void setOauthAccessTokenSecret(String oauthAccessTokenSecret) {
+        this.oauthAccessTokenSecret = oauthAccessTokenSecret;
+    }
 }
