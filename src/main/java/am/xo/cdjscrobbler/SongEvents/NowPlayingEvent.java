@@ -28,6 +28,7 @@
 package am.xo.cdjscrobbler.SongEvents;
 
 import am.xo.cdjscrobbler.SongEvent;
+import am.xo.cdjscrobbler.SongEventVisitor;
 import am.xo.cdjscrobbler.SongModel;
 import org.deepsymmetry.beatlink.CdjStatus;
 
@@ -47,5 +48,9 @@ public class NowPlayingEvent implements SongEvent {
     @Override
     public String toString() {
         return String.format("** NOW PLAYING **");
+    }
+
+    public void accept(SongEventVisitor visitor) {
+        visitor.visit(this);
     }
 }

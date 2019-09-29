@@ -27,9 +27,15 @@
 
 package am.xo.cdjscrobbler;
 
-/**
- * Marker interface for events emitted from the SongModel and handled by the QueueProcessor.
- */
-public interface SongEvent {
-    void accept(SongEventVisitor visitor);
+import am.xo.cdjscrobbler.SongEvents.NowPlayingEvent;
+import am.xo.cdjscrobbler.SongEvents.ResetEvent;
+import am.xo.cdjscrobbler.SongEvents.ScrobbleEvent;
+import am.xo.cdjscrobbler.SongEvents.TransitionEvent;
+
+public interface SongEventVisitor {
+
+    public void visit(NowPlayingEvent event);
+    public void visit(ScrobbleEvent event);
+    public void visit(ResetEvent event);
+    public void visit(TransitionEvent event);
 }

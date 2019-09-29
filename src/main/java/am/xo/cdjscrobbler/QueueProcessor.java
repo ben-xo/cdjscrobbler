@@ -28,7 +28,9 @@
 package am.xo.cdjscrobbler;
 
 import am.xo.cdjscrobbler.SongEvents.NowPlayingEvent;
+import am.xo.cdjscrobbler.SongEvents.ResetEvent;
 import am.xo.cdjscrobbler.SongEvents.ScrobbleEvent;
+import am.xo.cdjscrobbler.SongEvents.TransitionEvent;
 import org.deepsymmetry.beatlink.data.MetadataFinder;
 import org.deepsymmetry.beatlink.data.TrackMetadata;
 import org.slf4j.Logger;
@@ -47,7 +49,7 @@ import java.util.concurrent.LinkedBlockingQueue;
  *
  * TODO: make this pluginable
  */
-public class QueueProcessor {
+public class QueueProcessor implements SongEventVisitor {
 
     static final Logger logger = LoggerFactory.getLogger(QueueProcessor.class);
 
@@ -71,28 +73,42 @@ public class QueueProcessor {
             SongEvent songEvent = songEventQueue.take(); // this blocks until an event is ready.
             logger.info("Received event " + songEvent);
 
-            // TODO: apply visitor pattern
-
-            if(songEvent instanceof NowPlayingEvent) {
-
-                // NowPlaying events indicate that we've played enough of the song to start caring about
-                // what it actually is. (The next state, Scrobbling, depends on knowing the song length)
-                NowPlayingEvent nowPlayingEvent = (NowPlayingEvent) songEvent;
-                TrackMetadata metadata = MetadataFinder.getInstance().requestMetadataFrom(nowPlayingEvent.cdjStatus);
-                logger.info("Song: " + metadata);
-
-                // save it back to the model so it can be used to determine the scrobble point
-                nowPlayingEvent.model.song = new SongDetails(metadata);
-
-                if(lfm != null)     lfm.updateNowPlaying(nowPlayingEvent);
-                if(twitter != null) twitter.sendNowPlaying(nowPlayingEvent);
-
-            } else if(songEvent instanceof ScrobbleEvent) {
-
-                ScrobbleEvent scrobbleEvent = (ScrobbleEvent) songEvent;
-                if(lfm != null)      lfm.scrobble(scrobbleEvent);
-            }
+            // Visitor pattern. Go visit the event, to have it call back to the right handler on this class.
+            // (One wonders if it's worth it, just to avoid smelly "instanceof")
+            songEvent.accept(this);
         }
+    }
+
+    public void visit(NowPlayingEvent event) {
+        // NowPlaying events indicate that we've played enough of the song to start caring about
+        // what it actually is. (The next state, Scrobbling, depends on knowing the song length)
+        TrackMetadata metadata = MetadataFinder.getInstance().requestMetadataFrom(event.cdjStatus);
+        logger.info("Song: " + metadata);
+
+        // save it back to the model so it can be used to determine the scrobble point
+        event.model.song = new SongDetails(metadata);
+
+        if(lfm != null) {
+            lfm.updateNowPlaying(event);
+        }
+
+        if(twitter != null) {
+            twitter.sendNowPlaying(event);
+        }
+    }
+
+    public void visit(ResetEvent event) {
+        // noop
+    }
+
+    public void visit(ScrobbleEvent event) {
+        if(lfm != null) {
+            lfm.scrobble(event);
+        }
+    }
+
+    public void visit(TransitionEvent event) {
+        // noop
     }
 
     public void setLfm(LastFmClient lfm) {

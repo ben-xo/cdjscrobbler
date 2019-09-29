@@ -28,6 +28,7 @@
 package am.xo.cdjscrobbler.SongEvents;
 
 import am.xo.cdjscrobbler.SongEvent;
+import am.xo.cdjscrobbler.SongEventVisitor;
 
 /**
  * Event emitted by SongModel when we think the song has stopped or changed.
@@ -37,5 +38,9 @@ public class ResetEvent implements SongEvent {
     @Override
     public String toString() {
         return String.format("** RESET (Song stopped or changed) **");
+    }
+
+    public void accept(SongEventVisitor visitor) {
+        visitor.visit(this);
     }
 }
