@@ -1,20 +1,13 @@
 package am.xo.cdjscrobbler;
 
-import am.xo.cdjscrobbler.SongEvents.NowPlayingEvent;
-import am.xo.cdjscrobbler.SongEvents.ScrobbleEvent;
-import org.deepsymmetry.beatlink.*;
+import org.deepsymmetry.beatlink.DeviceFinder;
+import org.deepsymmetry.beatlink.VirtualCdj;
 import org.deepsymmetry.beatlink.data.MetadataFinder;
-
-import org.deepsymmetry.beatlink.data.TrackMetadata;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.IOException;
-import java.io.InputStream;
-import java.nio.file.Files;
-import java.nio.file.Paths;
-import java.util.Properties;
 import java.util.concurrent.LinkedBlockingQueue;
 
 /**

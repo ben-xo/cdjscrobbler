@@ -1,8 +1,10 @@
 package am.xo.cdjscrobbler;
-import am.xo.cdjscrobbler.SongEvents.NowPlayingEvent;
+
 import am.xo.cdjscrobbler.SongEvents.ResetEvent;
 import am.xo.cdjscrobbler.SongEvents.ScrobbleEvent;
-import org.deepsymmetry.beatlink.*;
+import org.deepsymmetry.beatlink.CdjStatus;
+import org.deepsymmetry.beatlink.DeviceUpdate;
+import org.deepsymmetry.beatlink.DeviceUpdateListener;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

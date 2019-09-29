@@ -2,19 +2,13 @@ package am.xo.cdjscrobbler;
 
 import am.xo.cdjscrobbler.SongEvents.NowPlayingEvent;
 import am.xo.cdjscrobbler.SongEvents.ScrobbleEvent;
-import de.umass.lastfm.Authenticator;
-import de.umass.lastfm.Caller;
-import de.umass.lastfm.Session;
-import de.umass.lastfm.Track;
-import de.umass.lastfm.User;
+import de.umass.lastfm.*;
 import de.umass.lastfm.scrobble.ScrobbleData;
 import de.umass.lastfm.scrobble.ScrobbleResult;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.FileOutputStream;
 import java.io.IOException;
-import java.util.Properties;
 
 public class LastFmClient {
 
