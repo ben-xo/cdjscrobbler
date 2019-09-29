@@ -62,8 +62,13 @@ public class SongModel {
 
     final Logger logger = LoggerFactory.getLogger(SongModel.class);
 
-    protected int deviceNumber = 0;
+    /**
+     * This field is written directly by the QueueProcessor when the song's details have been resolved (based on the
+     * rekordboxId field). This happens in a different thread to the rest of the processing of the model.
+     */
     protected SongDetails song = null;
+
+    protected int deviceNumber;
     protected long totalPlayTime = 0;
     protected long startedAt = 0;
     protected SongState currentState = SongState.STARTED;
@@ -113,8 +118,6 @@ public class SongModel {
      * Re-initialise. This is usually called when transitioning from CUEING to STARTED.
      */
     public void resetPlay() {
-        song = null;
-        rekordboxId = 0;
         totalPlayTime = 0;
         startedAt = 0;
     }

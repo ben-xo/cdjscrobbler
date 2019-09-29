@@ -67,6 +67,12 @@ public class UpdateListener implements DeviceUpdateListener, SongEventVisitor {
         }
     }
 
+    /**
+     * This method is invoked by the beat-link VirtualCdj, on the status receiver thread. We generate events
+     * and then put them onto a queue to be processed by the main thread.
+     *
+     * @param deviceUpdate
+     */
     @Override
     public void received(DeviceUpdate deviceUpdate) {
 
