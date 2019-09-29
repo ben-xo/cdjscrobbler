@@ -46,7 +46,7 @@ public class ComboConfig extends Properties {
     public ComboConfig() {}
 
     public void add(Properties p) {
-        configs.add(p);
+        configs.add(0, p);
     }
 
     /**
@@ -60,7 +60,7 @@ public class ComboConfig extends Properties {
     public synchronized void load(InputStream inStream) throws IOException {
         Properties p = new Properties();
         p.load(inStream);
-        configs.add(0, p);
+        add(p);
     }
 
     /**
