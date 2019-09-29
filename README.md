@@ -78,3 +78,12 @@ CDJ Scrobbler follows along events from the CDJs, and provides the following sta
     |        | After the song has stopped, we reset back to Started for a new song.
     +--------+
 
+Credits
+-------
+
+CDJ Scrobbler was written by @benxo (https://twitter.com/benxo) and uses the following components
+* beat-link   (https://github.com/Deep-Symmetry/beat-link) - Eclipse Public License
+* lastfm-java (https://github.com/jkovacs) - BSD License
+* ScribeJava  (https://github.com/scribejava/scribejava) - MIT License
+* Twitter4J   (http://twitter4j.org/) - Apache License 2.0
+
