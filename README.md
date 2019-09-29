@@ -13,11 +13,23 @@ You will need maven installed.
 Run
 ===
 
-You will need Java 1.8 or above installed. The computer you run CDJ Scrobbler from must be on the same network as the CDJs! So, plug them into an ethernet hub or switch, and plug the computer into the same switch.
+* You will need Java 1.8 or above installed. 
+* The computer you run CDJ Scrobbler from must be on the same network as the CDJs! So, plug them into an ethernet hub or switch, and plug the computer into the same switch.
+* If you want to use the Last.fm scrobbling feature, you need to put the following into the file cdjscrobbler.properties in your home directory:
+
+  lastfm.api.key=a key you got from https://www.last.fm/api
+  lastfm.api.secret=the secret that goes with that key
+  cdjscrobbler.enable.lastfm=true
+
+* If you want to use the Tweet feature, you need to put the following into the file cdjscrobbler.properties in your home directory:
+
+  twitter4j.oauth.consumerSecret=a key that you got from https://developer.twitter.com
+  twitter4j.oauth.consumerKey=the secret that goes with that key
+  cdjscrobbler.enable.twitter=true
+
+* Finally, run it in Terminal or Command Prompt:
 
   java -jar cdjscrobbler-1.0.jar 
-
-
 
 
 What's happening?
