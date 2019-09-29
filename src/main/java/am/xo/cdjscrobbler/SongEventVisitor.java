@@ -32,6 +32,10 @@ import am.xo.cdjscrobbler.SongEvents.ResetEvent;
 import am.xo.cdjscrobbler.SongEvents.ScrobbleEvent;
 import am.xo.cdjscrobbler.SongEvents.TransitionEvent;
 
+/**
+ * Interface which visitors to SongEvents must implement. (Not all visitors need to handle all events, but all visitors
+ * must implement all methods). Both UpdateListener and QueueProcessor are SongEventVisitors, for different reasons.
+ */
 public interface SongEventVisitor {
 
     void visit(NowPlayingEvent event);
