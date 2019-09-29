@@ -131,5 +131,11 @@ public class Application
                 throw ioe;
             }
         }
+
+        String nowPlayingPoint = config.getProperty("cdjscrobbler.model.nowPlayingPointMs", "");
+        if(nowPlayingPoint != null && !nowPlayingPoint.isEmpty()) {
+            logger.info("Loaded Now Playing Point of {} ms", nowPlayingPoint);
+            SongModel.setNowPlayingPoint(Integer.parseInt(nowPlayingPoint));
+        }
     }
 }
