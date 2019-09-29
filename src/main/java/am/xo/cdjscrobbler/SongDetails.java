@@ -30,7 +30,6 @@ public class SongDetails {
     }
 
     public String getFullTitle() {
-        // TODO: wrong way to render artist, fix later
         return getArtist() + " – " + getTitle();
     }
 

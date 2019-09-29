@@ -20,19 +20,23 @@ import java.util.concurrent.LinkedBlockingQueue;
 /**
  * Hello world!
  *
+ * TODO: sort out the configuration mess
+ *
  */
 public class Application
 {
     static final Logger logger = LoggerFactory.getLogger(Application.class);
-    static final Properties config = new Properties();
+    static final ComboConfig config = new ComboConfig();
     static final Application theApplication = new Application();
 
+    static boolean lfmEnabled;
+    static boolean twitterEnabled;
+
     static final String localConfigFile = System.getProperty("user.home") + File.separator + "cdjscrobbler.properties";
-    static final String localSessionFile = System.getProperty("user.home") + File.separator + "cdjscrobbler-session.properties";
 
     protected LinkedBlockingQueue<SongEvent> songEventQueue;
     protected UpdateListener updateListener;
-//    protected QueueProcessor queueProcessor;
+    protected QueueProcessor queueProcessor;
 
     public static void main( String[] args ) throws Exception
     {
@@ -46,13 +50,28 @@ public class Application
 
     public void start() throws Exception
     {
-        logger.info("Starting Last.fm Scrobbler…");
-        LastFmClient lfm = new LastFmClient(config);
-        try {
-            lfm.ensureUserIsConnected();
-        } catch(IOException e) {
-            e.printStackTrace();
-            System.exit(1);
+        LastFmClient lfm = null;
+        if(lfmEnabled) {
+            logger.info("Starting Last.fm Scrobbler…");
+            lfm = new LastFmClient(new LastFmClientConfig(config));
+            try {
+                lfm.ensureUserIsConnected();
+            } catch (IOException e) {
+                e.printStackTrace();
+                System.exit(1);
+            }
+        }
+
+        TwitterClient twitter = null;
+        if(twitterEnabled) {
+            logger.info("Starting Twitter bot…");
+            twitter = new TwitterClient(new TwitterClientConfig(config));
+            try {
+                twitter.ensureUserIsConnected();
+            } catch (IOException e) {
+                e.printStackTrace();
+                System.exit(1);
+            }
         }
 
         logger.info("Starting DeviceFinder…");
@@ -86,32 +105,10 @@ public class Application
         VirtualCdj.getInstance().addUpdateListener(updateListener);
 
         logger.info( "Starting QueueProcessor…" );
-//        queueProcessor = new QueueProcessor(songEventQueue);
-
-        while(true) {
-            // TODO: this is the body of QueueProcessor.
-            SongEvent songEvent = songEventQueue.take(); // this blocks until an event is ready.
-            logger.info("Received event " + songEvent);
-
-            if(songEvent instanceof NowPlayingEvent) {
-
-                // NowPlaying events indicate that we've played enough of the song to start caring about
-                // what it actually is. (The next state, Scrobbling, depends on knowing the song length)
-                NowPlayingEvent nowPlayingEvent = (NowPlayingEvent) songEvent;
-                TrackMetadata metadata = MetadataFinder.getInstance().requestMetadataFrom(nowPlayingEvent.cdjStatus);
-                logger.info("Song: " + metadata);
-
-                // save it back to the model so it can be used to determine the scrobble point
-                nowPlayingEvent.model.song = new SongDetails(metadata);
-
-                lfm.updateNowPlaying(nowPlayingEvent);
-
-            } else if(songEvent instanceof ScrobbleEvent) {
-
-                ScrobbleEvent scrobbleEvent = (ScrobbleEvent) songEvent;
-                lfm.scrobble(scrobbleEvent);
-            }
-        }
+        queueProcessor = new QueueProcessor(songEventQueue);
+        if(lfmEnabled)     queueProcessor.setLfm(lfm);
+        if(twitterEnabled) queueProcessor.setTwitter(twitter);
+        queueProcessor.start(); // this doesn't return until shutdown (or exception)
 
         // TODO: add a Lifecycle handler that shuts down when everything else shuts down
 
@@ -128,29 +125,45 @@ public class Application
         // load default (internal) config
         config.load(Application.class.getClassLoader().getResourceAsStream("config.properties"));
 
-        // load e.g. Last.fm api key and secret
+        // load e.g. Last.fm and Twitter keys and tokens
         logger.info("Loading local client configuration");
-        loadConfigFromFile(localConfigFile, false);
-
-        // load e.g. Last.fm session key
-        logger.info("Loading local session configuration");
-        loadConfigFromFile(localSessionFile, false);
+        ConfigFileUtil.maybeLoad(config, localConfigFile);
 
         // load any config specified on the command line.
         if (args.length > 0) {
-            loadConfigFromFile(args[0], true);
-        }
-    }
-
-    private static void loadConfigFromFile(String configPath, boolean isVital) throws IOException {
-        logger.info("Loading config from " + configPath);
-        try (InputStream is = Files.newInputStream(Paths.get(configPath))) {
-            config.load(is);
-        } catch (IOException ioe) {
-            if(isVital) {
-                logger.error("Error loading config properties from {}", configPath, ioe);
+            String extraConfigFile =  args[0];
+            logger.info("Loading config from " + extraConfigFile);
+            try {
+                ConfigFileUtil.load(config, extraConfigFile);
+            } catch (IOException ioe) {
+                logger.error("Error loading config properties from {}", extraConfigFile, ioe);
                 throw ioe;
             }
+        }
+
+        String nowPlayingPoint = config.getProperty("cdjscrobbler.model.nowPlayingPointMs", "");
+        String lfmEnabled = config.getProperty("cdjscrobbler.enable.lastfm", "false");
+        String twitterEnabled = config.getProperty("cdjscrobbler.enable.twitter", "false");
+
+        if(nowPlayingPoint != null && !nowPlayingPoint.isEmpty()) {
+            logger.info("Loaded Now Playing Point of {} ms", nowPlayingPoint);
+            SongModel.setNowPlayingPoint(Integer.parseInt(nowPlayingPoint));
+        }
+
+        if(Boolean.parseBoolean(lfmEnabled)) {
+            Application.lfmEnabled = true;
+        } else {
+            logger.warn("**************************************************************************************");
+            logger.warn("* Scrobbling to Last.fm disabled. set cdjscrobbler.enable.lastfm=true in your config *");
+            logger.warn("**************************************************************************************");
+        }
+
+        if(Boolean.parseBoolean(twitterEnabled)) {
+            Application.twitterEnabled = true;
+        } else {
+            logger.warn("*********************************************************************************");
+            logger.warn("* Tweeting tracks disabled. set cdjscrobbler.enable.twitter=true in your config *");
+            logger.warn("*********************************************************************************");
         }
     }
 }

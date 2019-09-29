@@ -12,7 +12,7 @@ public class SongModel {
     /**
      * After NOW_PLAYING_POINT_MS of continuous playback, we start recording the song playtime.
      */
-    static final int NOW_PLAYING_POINT_MS = 10000; // milliseconds (e.g. 30000 = 30 seconds)
+    public static int NOW_PLAYING_POINT_MS = 10000; // milliseconds (e.g. 30000 = 30 seconds)
 
     /**
      *   which device 			<- CdjStatus.getTrackSourcePlayer()
@@ -102,5 +102,14 @@ public class SongModel {
 
     public long getStartedAt() {
         return startedAt;
+    }
+
+    /**
+     * For those times when the default of 10s is too soon and you want to override this in config.
+     *
+     * @param point
+     */
+    public static void setNowPlayingPoint(int point) {
+        NOW_PLAYING_POINT_MS = point;
     }
 }
