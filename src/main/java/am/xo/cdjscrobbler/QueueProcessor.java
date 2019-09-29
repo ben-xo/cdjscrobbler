@@ -39,13 +39,13 @@ public class QueueProcessor {
                 // save it back to the model so it can be used to determine the scrobble point
                 nowPlayingEvent.model.song = new SongDetails(metadata);
 
-                lfm.updateNowPlaying(nowPlayingEvent);
-                twitter.sendNowPlaying(nowPlayingEvent);
+                if(lfm != null)     lfm.updateNowPlaying(nowPlayingEvent);
+                if(twitter != null) twitter.sendNowPlaying(nowPlayingEvent);
 
             } else if(songEvent instanceof ScrobbleEvent) {
 
                 ScrobbleEvent scrobbleEvent = (ScrobbleEvent) songEvent;
-                lfm.scrobble(scrobbleEvent);
+                if(lfm != null)      lfm.scrobble(scrobbleEvent);
             }
         }
     }

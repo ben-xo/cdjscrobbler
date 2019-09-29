@@ -29,6 +29,9 @@ public class Application
     static final ComboConfig config = new ComboConfig();
     static final Application theApplication = new Application();
 
+    static boolean lfmEnabled;
+    static boolean twitterEnabled;
+
     static final String localConfigFile = System.getProperty("user.home") + File.separator + "cdjscrobbler.properties";
 
     protected LinkedBlockingQueue<SongEvent> songEventQueue;
@@ -47,22 +50,28 @@ public class Application
 
     public void start() throws Exception
     {
-        logger.info("Starting Last.fm Scrobbler…");
-        LastFmClient lfm = new LastFmClient(new LastFmClientConfig(config));
-        try {
-            lfm.ensureUserIsConnected();
-        } catch(IOException e) {
-            e.printStackTrace();
-            System.exit(1);
+        LastFmClient lfm = null;
+        if(lfmEnabled) {
+            logger.info("Starting Last.fm Scrobbler…");
+            lfm = new LastFmClient(new LastFmClientConfig(config));
+            try {
+                lfm.ensureUserIsConnected();
+            } catch (IOException e) {
+                e.printStackTrace();
+                System.exit(1);
+            }
         }
 
-        logger.info("Starting Twitter bot…");
-        TwitterClient twitter = new TwitterClient(new TwitterClientConfig(config));
-        try {
-            twitter.ensureUserIsConnected();
-        } catch(IOException e) {
-            e.printStackTrace();
-            System.exit(1);
+        TwitterClient twitter = null;
+        if(twitterEnabled) {
+            logger.info("Starting Twitter bot…");
+            twitter = new TwitterClient(new TwitterClientConfig(config));
+            try {
+                twitter.ensureUserIsConnected();
+            } catch (IOException e) {
+                e.printStackTrace();
+                System.exit(1);
+            }
         }
 
         logger.info("Starting DeviceFinder…");
@@ -97,8 +106,8 @@ public class Application
 
         logger.info( "Starting QueueProcessor…" );
         queueProcessor = new QueueProcessor(songEventQueue);
-        queueProcessor.setLfm(lfm);
-        queueProcessor.setTwitter(twitter);
+        if(lfmEnabled)     queueProcessor.setLfm(lfm);
+        if(twitterEnabled) queueProcessor.setTwitter(twitter);
         queueProcessor.start(); // this doesn't return until shutdown (or exception)
 
         // TODO: add a Lifecycle handler that shuts down when everything else shuts down
@@ -133,9 +142,28 @@ public class Application
         }
 
         String nowPlayingPoint = config.getProperty("cdjscrobbler.model.nowPlayingPointMs", "");
+        String lfmEnabled = config.getProperty("cdjscrobbler.enable.lastfm", "false");
+        String twitterEnabled = config.getProperty("cdjscrobbler.enable.twitter", "false");
+
         if(nowPlayingPoint != null && !nowPlayingPoint.isEmpty()) {
             logger.info("Loaded Now Playing Point of {} ms", nowPlayingPoint);
             SongModel.setNowPlayingPoint(Integer.parseInt(nowPlayingPoint));
+        }
+
+        if(Boolean.parseBoolean(lfmEnabled)) {
+            Application.lfmEnabled = true;
+        } else {
+            logger.warn("**************************************************************************************");
+            logger.warn("* Scrobbling to Last.fm disabled. set cdjscrobbler.enable.lastfm=true in your config *");
+            logger.warn("**************************************************************************************");
+        }
+
+        if(Boolean.parseBoolean(twitterEnabled)) {
+            Application.twitterEnabled = true;
+        } else {
+            logger.warn("*********************************************************************************");
+            logger.warn("* Tweeting tracks disabled. set cdjscrobbler.enable.twitter=true in your config *");
+            logger.warn("*********************************************************************************");
         }
     }
 }
