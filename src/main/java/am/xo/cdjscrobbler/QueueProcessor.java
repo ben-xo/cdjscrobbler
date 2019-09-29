@@ -71,6 +71,8 @@ public class QueueProcessor {
             SongEvent songEvent = songEventQueue.take(); // this blocks until an event is ready.
             logger.info("Received event " + songEvent);
 
+            // TODO: apply visitor pattern
+
             if(songEvent instanceof NowPlayingEvent) {
 
                 // NowPlaying events indicate that we've played enough of the song to start caring about
