@@ -27,8 +27,10 @@
 
 package am.xo.cdjscrobbler;
 
+import am.xo.cdjscrobbler.SongEvents.NowPlayingEvent;
 import am.xo.cdjscrobbler.SongEvents.ResetEvent;
 import am.xo.cdjscrobbler.SongEvents.ScrobbleEvent;
+import am.xo.cdjscrobbler.SongEvents.TransitionEvent;
 import org.deepsymmetry.beatlink.CdjStatus;
 import org.deepsymmetry.beatlink.DeviceUpdate;
 import org.deepsymmetry.beatlink.DeviceUpdateListener;
@@ -44,7 +46,7 @@ import java.util.concurrent.LinkedBlockingQueue;
  *
  * Events from the SongModels are then put onto a thread-safe queue, for handling in another thread.
  */
-public class UpdateListener implements DeviceUpdateListener {
+public class UpdateListener implements DeviceUpdateListener, SongEventVisitor {
 
     final Logger logger = LoggerFactory.getLogger(UpdateListener.class);
 
@@ -90,15 +92,38 @@ public class UpdateListener implements DeviceUpdateListener {
                     try {
                         logger.info("Device " + deviceNumber + " sending event " + e);
                         songEventQueue.put(e);
-                        if(e instanceof ResetEvent || e instanceof ScrobbleEvent) {
-                            // Both Reset and Scrobble mean we reached the end of the song.
-                            models[deviceNumber] = new SongModel(deviceNumber);
-                        }
+
+                        // Visitor pattern.
+                        // Some event types re-initialise the model (see visit() below).
+                        e.accept(this);
+
                     } catch (InterruptedException ex) {
                         ex.printStackTrace();
                     }
                 });
             }
         }
+    }
+
+    @Override
+    public void visit(NowPlayingEvent event) {
+        // noop
+    }
+
+    @Override
+    public void visit(ScrobbleEvent event) {
+        int deviceNumber = event.cdjStatus.getDeviceNumber();
+        models[deviceNumber] = new SongModel(deviceNumber);
+    }
+
+    @Override
+    public void visit(ResetEvent event) {
+        int deviceNumber = event.cdjStatus.getDeviceNumber();
+        models[deviceNumber] = new SongModel(deviceNumber);
+    }
+
+    @Override
+    public void visit(TransitionEvent event) {
+        // noop
     }
 }

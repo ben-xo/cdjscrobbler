@@ -34,8 +34,8 @@ import am.xo.cdjscrobbler.SongEvents.TransitionEvent;
 
 public interface SongEventVisitor {
 
-    public void visit(NowPlayingEvent event);
-    public void visit(ScrobbleEvent event);
-    public void visit(ResetEvent event);
-    public void visit(TransitionEvent event);
+    void visit(NowPlayingEvent event);
+    void visit(ScrobbleEvent event);
+    void visit(ResetEvent event);
+    void visit(TransitionEvent event);
 }

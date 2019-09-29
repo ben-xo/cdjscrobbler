@@ -103,7 +103,7 @@ public enum SongState {
             model.addPlaytimeFrom(update);
             if(isStopping(model, update)) {
                 model.currentState = STOPPED;
-                return new ResetEvent();
+                return new ResetEvent(update);
             } else if(model.isPlayingForward(update)) {
                 if (model.isPastScrobblePoint()) {
                     model.currentState = SCROBBLING;
@@ -130,7 +130,7 @@ public enum SongState {
         public SongEvent applyNext(SongModel model, CdjStatus update) {
             if(isStopping(model, update)) {
                 model.currentState = STOPPED;
-                return new ResetEvent();
+                return new ResetEvent(update);
             } else if(model.isPlayingForward(update)) {
                 model.currentState = PLAYING;
                 return new TransitionEvent(PLAYINGPAUSED, PLAYING);
