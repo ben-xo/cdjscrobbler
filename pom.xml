@@ -4,7 +4,7 @@
   <groupId>am.xo.cdjscrobbler</groupId>
   <artifactId>cdjscrobbler</artifactId>
   <packaging>jar</packaging>
-  <version>1.0-SNAPSHOT</version>
+  <version>1.1</version>
   <repositories>
     <repository>
       <!-- Used for lastfm-java because there is no official release withn HTTPS support, even though it's on github -->
@@ -104,6 +104,16 @@
       <groupId>com.github.jkovacs</groupId>
       <artifactId>lastfm-java</artifactId>
       <version>2cc381683ceae99606b9becdaffc6727e2dcd561</version>
+    </dependency>
+    <dependency>
+      <groupId>com.github.scribejava</groupId>
+      <artifactId>scribejava-apis</artifactId>
+      <version>6.8.1</version>
+    </dependency>
+    <dependency>
+      <groupId>org.twitter4j</groupId>
+      <artifactId>twitter4j-core</artifactId>
+      <version>4.0.7</version>
     </dependency>
     <dependency>
       <groupId>junit</groupId>
