@@ -27,10 +27,7 @@
 
 package am.xo.cdjscrobbler;
 
-import am.xo.cdjscrobbler.SongEvents.NowPlayingEvent;
-import am.xo.cdjscrobbler.SongEvents.ResetEvent;
-import am.xo.cdjscrobbler.SongEvents.ScrobbleEvent;
-import am.xo.cdjscrobbler.SongEvents.TransitionEvent;
+import am.xo.cdjscrobbler.SongEvents.*;
 import org.deepsymmetry.beatlink.data.MetadataFinder;
 import org.deepsymmetry.beatlink.data.TrackMetadata;
 import org.slf4j.Logger;
@@ -79,14 +76,10 @@ public class QueueProcessor implements SongEventVisitor {
         }
     }
 
+    @Override
     public void visit(NowPlayingEvent event) {
-        // NowPlaying events indicate that we've played enough of the song to start caring about
-        // what it actually is. (The next state, Scrobbling, depends on knowing the song length)
-        TrackMetadata metadata = MetadataFinder.getInstance().requestMetadataFrom(event.cdjStatus);
-        logger.info("Song: " + metadata);
 
-        // save it back to the model so it can be used to determine the scrobble point
-        event.model.song = new SongDetails(metadata);
+        // TODO: tell the DMCA song-warning plugin
 
         if(lfm != null) {
             lfm.updateNowPlaying(event);
@@ -97,18 +90,34 @@ public class QueueProcessor implements SongEventVisitor {
         }
     }
 
+    @Override
     public void visit(ResetEvent event) {
         // noop
     }
 
+    @Override
     public void visit(ScrobbleEvent event) {
         if(lfm != null) {
             lfm.scrobble(event);
         }
     }
 
+    @Override
     public void visit(TransitionEvent event) {
         // noop
+    }
+
+    @Override
+    public void visit(NewSongLoadedEvent event) {
+        // NowPlaying events indicate that we've played enough of the song to start caring about
+        // what it actually is. (The next state, Scrobbling, depends on knowing the song length)
+        TrackMetadata metadata = MetadataFinder.getInstance().requestMetadataFrom(event.cdjStatus);
+        logger.info("Song: " + metadata);
+
+        // save it back to the model so it can be used to determine the scrobble point
+        event.model.song = new SongDetails(metadata);
+
+        // TODO: tell the DMCA song-warning plugin
     }
 
     public void setLfm(LastFmClient lfm) {

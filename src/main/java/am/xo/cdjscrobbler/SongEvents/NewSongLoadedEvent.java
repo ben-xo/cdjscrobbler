@@ -25,19 +25,32 @@
  *
  */
 
-package am.xo.cdjscrobbler;
+package am.xo.cdjscrobbler.SongEvents;
 
-import am.xo.cdjscrobbler.SongEvents.*;
+import am.xo.cdjscrobbler.SongEvent;
+import am.xo.cdjscrobbler.SongEventVisitor;
+import am.xo.cdjscrobbler.SongModel;
+import org.deepsymmetry.beatlink.CdjStatus;
 
 /**
- * Interface which visitors to SongEvents must implement. (Not all visitors need to handle all events, but all visitors
- * must implement all methods). Both UpdateListener and QueueProcessor are SongEventVisitors, for different reasons.
+ * Event emitted by SongModel when we believe a song is "now playing".
  */
-public interface SongEventVisitor {
+public class NewSongLoadedEvent implements SongEvent {
 
-    void visit(NewSongLoadedEvent event);
-    void visit(NowPlayingEvent event);
-    void visit(ScrobbleEvent event);
-    void visit(ResetEvent event);
-    void visit(TransitionEvent event);
+    public SongModel model;
+    public CdjStatus cdjStatus;
+
+    public NewSongLoadedEvent(SongModel m, CdjStatus s) {
+        this.model = m;
+        this.cdjStatus = s;
+    }
+
+    @Override
+    public String toString() {
+        return String.format("** NOW PLAYING **");
+    }
+
+    public void accept(SongEventVisitor visitor) {
+        visitor.visit(this);
+    }
 }
