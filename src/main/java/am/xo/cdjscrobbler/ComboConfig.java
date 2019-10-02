@@ -27,6 +27,8 @@
 
 package am.xo.cdjscrobbler;
 
+import nu.studer.java.util.OrderedProperties;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -41,11 +43,11 @@ import java.util.Properties;
  */
 public class ComboConfig extends Properties {
 
-    private List<Properties> configs = new ArrayList<>();
+    private List<OrderedProperties> configs = new ArrayList<>();
 
     public ComboConfig() {}
 
-    public void add(Properties p) {
+    public void add(OrderedProperties p) {
         configs.add(0, p);
     }
 
@@ -56,9 +58,8 @@ public class ComboConfig extends Properties {
      * @param inStream
      * @throws IOException
      */
-    @Override
     public synchronized void load(InputStream inStream) throws IOException {
-        Properties p = new Properties();
+        OrderedProperties p = new OrderedProperties();
         p.load(inStream);
         add(p);
     }
@@ -70,7 +71,6 @@ public class ComboConfig extends Properties {
      * @param comments
      * @throws IOException
      */
-    @Override
     public void store(OutputStream out, String comments)
             throws IOException {
         configs.get(0).store(out, comments);
@@ -85,9 +85,8 @@ public class ComboConfig extends Properties {
      * @param defaultValue
      * @return
      */
-    @Override
     public String getProperty(String key, String defaultValue) {
-        for(Properties p: configs) {
+        for(OrderedProperties p: configs) {
             String val = p.getProperty(key);
             if(val != null && !val.isEmpty()) {
                 return val;
@@ -96,7 +95,6 @@ public class ComboConfig extends Properties {
         return defaultValue;
     }
 
-    @Override
     public String getProperty(String key) {
         return getProperty(key, null);
     }
@@ -108,9 +106,8 @@ public class ComboConfig extends Properties {
      * @param value
      * @return
      */
-    @Override
     public synchronized Object setProperty(String key, String value) {
-        for(Properties p: configs) {
+        for(OrderedProperties p: configs) {
             String prevVal = p.getProperty(key);
             if(prevVal != null && !prevVal.isEmpty()) {
                 return p.setProperty(key, value);
