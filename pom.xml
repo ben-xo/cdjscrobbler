@@ -138,12 +138,13 @@
       <artifactId>slf4j-log4j12</artifactId>
       <version>1.7.5</version>
     </dependency>
+    <!-- This dependency is bundled with cdjscrobbler -->
+    <!--
     <dependency>
       <groupId>nu.studer</groupId>
       <artifactId>java-ordered-properties</artifactId>
       <version>1.0.2</version>
-      <scope>system</scope>
-      <systemPath>${pom.basedir}/src/main/resources/java-ordered-properties-1.0.2.jar</systemPath>
     </dependency>
+    -->
   </dependencies>
 </project>

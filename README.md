@@ -88,4 +88,5 @@ CDJ Scrobbler was written by @benxo (https://twitter.com/benxo) and uses the fol
 * ScribeJava         (https://github.com/scribejava/scribejava) - MIT License
 * Twitter4J          (http://twitter4j.org/) - Apache License 2.0
 * Ordered Properties (https://github.com/etiennestuder/java-ordered-properties) - Apache License 2.0
+  (This is copied into the project as it's not available on maven central)
 
