@@ -59,7 +59,7 @@ public class Application
     static boolean lfmEnabled;
     static boolean twitterEnabled;
 
-    static final String localConfigFile = System.getProperty("user.home") + File.separator + "cdjscrobbler.properties";
+    static String localConfigFile = System.getProperty("user.home") + File.separator + "cdjscrobbler.properties";
 
     protected LinkedBlockingQueue<SongEvent> songEventQueue;
     protected UpdateListener updateListener;
@@ -144,23 +144,22 @@ public class Application
 
         // TODO: make fewer assumptions here, but this'll do for now!
 
+        // load any config specified on the command line.
+        if (args.length > 0) {
+            localConfigFile = args[0];
+            logger.info("Config file set to " + localConfigFile);
+        }
+
         // load default (internal) config
         config.load(Application.class.getClassLoader().getResourceAsStream("config.properties"));
 
-        // load e.g. Last.fm and Twitter keys and tokens
-        logger.info("Loading local client configuration");
-        ConfigFileUtil.maybeLoad(config, localConfigFile);
-
-        // load any config specified on the command line.
-        if (args.length > 0) {
-            String extraConfigFile =  args[0];
-            logger.info("Loading config from " + extraConfigFile);
-            try {
-                ConfigFileUtil.load(config, extraConfigFile);
-            } catch (IOException ioe) {
-                logger.error("Error loading config properties from {}", extraConfigFile, ioe);
-                throw ioe;
-            }
+        try {
+            // load e.g. Last.fm and Twitter keys and tokens
+            logger.info("Loading local client configuration");
+            ConfigFileUtil.load(config, localConfigFile);
+        } catch (IOException ioe) {
+            logger.error("Error loading config properties from {}", localConfigFile, ioe);
+            throw ioe;
         }
 
         String nowPlayingPoint = config.getProperty("cdjscrobbler.model.nowPlayingPointMs", "");

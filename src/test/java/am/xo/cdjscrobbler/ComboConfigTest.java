@@ -28,6 +28,7 @@
 package am.xo.cdjscrobbler;
 
 import junit.framework.TestCase;
+import nu.studer.java.util.OrderedProperties;
 
 import java.util.Properties;
 
@@ -35,7 +36,7 @@ public class ComboConfigTest extends TestCase {
 
     public void test_getProperty_works_for_one_config() {
         ComboConfig c = new ComboConfig();
-        Properties p1 = new Properties();
+        OrderedProperties p1 = new OrderedProperties();
 
         p1.setProperty("test", "1");
 
@@ -47,8 +48,8 @@ public class ComboConfigTest extends TestCase {
 
     public void test_getProperty_checks_sequentially() {
         ComboConfig c = new ComboConfig();
-        Properties p1 = new Properties();
-        Properties p2 = new Properties();
+        OrderedProperties p1 = new OrderedProperties();
+        OrderedProperties p2 = new OrderedProperties();
 
         p1.setProperty("test", "1");
         p2.setProperty("test", "2");
@@ -62,8 +63,8 @@ public class ComboConfigTest extends TestCase {
 
     public void test_getProperty_ignores_unset() {
         ComboConfig c = new ComboConfig();
-        Properties p1 = new Properties();
-        Properties p2 = new Properties();
+        OrderedProperties p1 = new OrderedProperties();
+        OrderedProperties p2 = new OrderedProperties();
 
         p1.setProperty("test", "1");
 
@@ -76,8 +77,8 @@ public class ComboConfigTest extends TestCase {
 
     public void test_getProperty_ignores_empty() {
         ComboConfig c = new ComboConfig();
-        Properties p1 = new Properties();
-        Properties p2 = new Properties();
+        OrderedProperties p1 = new OrderedProperties();
+        OrderedProperties p2 = new OrderedProperties();
 
         p1.setProperty("test", "1");
         p2.setProperty("test", "");
@@ -91,8 +92,8 @@ public class ComboConfigTest extends TestCase {
 
     public void test_getProperty_returns_default() {
         ComboConfig c = new ComboConfig();
-        Properties p1 = new Properties();
-        Properties p2 = new Properties();
+        OrderedProperties p1 = new OrderedProperties();
+        OrderedProperties p2 = new OrderedProperties();
 
         p1.setProperty("test", "1");
         p2.setProperty("test", "2");
@@ -105,8 +106,8 @@ public class ComboConfigTest extends TestCase {
 
     public void test_setProperty_updates_most_recently_added() {
         ComboConfig c = new ComboConfig();
-        Properties p1 = new Properties();
-        Properties p2 = new Properties();
+        OrderedProperties p1 = new OrderedProperties();
+        OrderedProperties p2 = new OrderedProperties();
 
 
         p1.setProperty("test", "1");
@@ -124,8 +125,8 @@ public class ComboConfigTest extends TestCase {
 
     public void test_setProperty_adds_to_most_recently_added() {
         ComboConfig c = new ComboConfig();
-        Properties p1 = new Properties();
-        Properties p2 = new Properties();
+        OrderedProperties p1 = new OrderedProperties();
+        OrderedProperties p2 = new OrderedProperties();
 
 
         p1.setProperty("test", "1");
@@ -143,8 +144,8 @@ public class ComboConfigTest extends TestCase {
 
     public void test_setProperty_sets_in_first_config_that_has_property() {
         ComboConfig c = new ComboConfig();
-        Properties p1 = new Properties();
-        Properties p2 = new Properties();
+        OrderedProperties p1 = new OrderedProperties();
+        OrderedProperties p2 = new OrderedProperties();
 
 
         p1.setProperty("test", "1");
