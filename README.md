@@ -1,4 +1,4 @@
-CDJ Scrobbler v1.2
+CDJ Scrobbler v1.3
 ------------------
 
 CDJ Scrobbler is a Last.fm Scrobbler for Pioneer CDJ / XDJ (e.g. CDJ 2000) based on beat-link.
