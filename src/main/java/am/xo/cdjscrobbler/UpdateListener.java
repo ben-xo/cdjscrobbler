@@ -27,10 +27,7 @@
 
 package am.xo.cdjscrobbler;
 
-import am.xo.cdjscrobbler.SongEvents.NowPlayingEvent;
-import am.xo.cdjscrobbler.SongEvents.ResetEvent;
-import am.xo.cdjscrobbler.SongEvents.ScrobbleEvent;
-import am.xo.cdjscrobbler.SongEvents.TransitionEvent;
+import am.xo.cdjscrobbler.SongEvents.*;
 import org.deepsymmetry.beatlink.CdjStatus;
 import org.deepsymmetry.beatlink.DeviceUpdate;
 import org.deepsymmetry.beatlink.DeviceUpdateListener;
@@ -109,6 +106,11 @@ public class UpdateListener implements DeviceUpdateListener, SongEventVisitor {
                 });
             }
         }
+    }
+
+    @Override
+    public void visit(NewSongLoadedEvent event) {
+        // noop
     }
 
     @Override

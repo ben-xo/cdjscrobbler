@@ -27,10 +27,7 @@
 
 package am.xo.cdjscrobbler;
 
-import am.xo.cdjscrobbler.SongEvents.NowPlayingEvent;
-import am.xo.cdjscrobbler.SongEvents.ResetEvent;
-import am.xo.cdjscrobbler.SongEvents.ScrobbleEvent;
-import am.xo.cdjscrobbler.SongEvents.TransitionEvent;
+import am.xo.cdjscrobbler.SongEvents.*;
 import org.deepsymmetry.beatlink.CdjStatus;
 
 // TODO: reuse instances of TransitionEvent and ResetEvent
@@ -57,7 +54,7 @@ public enum SongState {
                 model.rekordboxId = update.getRekordboxId();
                 model.currentState = CUEING;
                 model.startedAt = System.currentTimeMillis() / 1000;
-                // don't bother with a transition event. Nobody cares
+                return new NewSongLoadedEvent(model, update);
             }
             return null;
         }
@@ -82,7 +79,7 @@ public enum SongState {
                 // whilst cueing - any sort of stopping play resets the model.
                 // this includes searching, rewinding, or other events.
                 model.resetPlay();
-                model.currentState = STARTED;
+                model.currentState = CUEINGPAUSED;
                 // don't bother with a transition event. Nobody cares
             }
             return null;
@@ -91,6 +88,23 @@ public enum SongState {
         @Override
         public boolean isMoving() {
             return true;
+        }
+    },
+
+    /**
+     * Paused, but before the Now playing
+     */
+    CUEINGPAUSED {
+        @Override
+        public SongEvent applyNext(SongModel model, CdjStatus update) {
+            if(isStopping(model, update)) {
+                model.currentState = STOPPED;
+                return new ResetEvent(update);
+            } else if(model.isPlayingForward(update)) {
+                model.currentState = CUEING;
+                // don't bother with a transition event. Nobody cares
+            }
+            return null;
         }
     },
 
