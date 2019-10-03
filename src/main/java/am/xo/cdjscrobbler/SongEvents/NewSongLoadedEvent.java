@@ -29,22 +29,25 @@ package am.xo.cdjscrobbler.SongEvents;
 
 import am.xo.cdjscrobbler.SongEvent;
 import am.xo.cdjscrobbler.SongEventVisitor;
+import am.xo.cdjscrobbler.SongModel;
 import org.deepsymmetry.beatlink.CdjStatus;
 
 /**
- * Event emitted by SongModel when we think the song has stopped or changed.
+ * Event emitted by SongModel when we believe a song is "now playing".
  */
-public class ResetEvent implements SongEvent {
+public class NewSongLoadedEvent implements SongEvent {
 
+    public SongModel model;
     public CdjStatus cdjStatus;
 
-    public ResetEvent(CdjStatus s) {
+    public NewSongLoadedEvent(SongModel m, CdjStatus s) {
+        this.model = m;
         this.cdjStatus = s;
     }
 
     @Override
     public String toString() {
-        return String.format("** RESET (Song stopped or changed) **");
+        return String.format("** NOW PLAYING **");
     }
 
     public void accept(SongEventVisitor visitor) {

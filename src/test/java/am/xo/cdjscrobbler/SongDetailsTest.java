@@ -27,64 +27,57 @@
 
 package am.xo.cdjscrobbler;
 
+import junit.framework.TestCase;
 import org.deepsymmetry.beatlink.data.TrackMetadata;
 
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
-/**
- * Encapsulates the data from a Track that's used by the song model, as well as basic text used for scrobbling and
- * tweeting. Most of the fields are just delegated onto the TrackMetadata object from beat-link, but the scrobble-point
- * (which is usually but not always the half-way point) is based on rules from https://www.last.fm/api/scrobbling
- */
-public class SongDetails {
+public class SongDetailsTest extends TestCase {
 
-    protected TrackMetadata theTrack;
-    long scrobblePoint;
+    TrackMetadata track;
 
-    public SongDetails(TrackMetadata t) {
-        theTrack = t;
-        calculateScrobblePoint();
+    public void setUp() {
+        track = mock(TrackMetadata.class);
     }
 
-    private void calculateScrobblePoint() {
-        int d = getDuration();
-        if (d < 30) {
-            // min scrobble point is 15s.
-            scrobblePoint = 15;
-        } else if( d > 480) {
-            // max scrobble point is 4 mins
-            scrobblePoint = 240;
-        } else {
-            scrobblePoint = d / 2;
-        }
+    public void test_scrobble_point_too_short_track() {
+        when(track.getDuration()).thenReturn(10);
+
+        SongDetails s = new SongDetails(track);
+        assertEquals(s.getDuration(), 10);
+        assertEquals(s.getScrobblePoint(), 15);
     }
 
-    public long getScrobblePoint() {
-        return scrobblePoint;
+    public void test_scrobble_point_shortest_track() {
+        when(track.getDuration()).thenReturn(30);
+
+        SongDetails s = new SongDetails(track);
+        assertEquals(s.getDuration(), 30);
+        assertEquals(s.getScrobblePoint(), 15);
     }
 
-    public String getFullTitle() {
-        return getArtist() + " – " + getTitle();
+    public void test_scrobble_point_normal_track() {
+        when(track.getDuration()).thenReturn(100);
+
+        SongDetails s = new SongDetails(track);
+        assertEquals(s.getDuration(), 100);
+        assertEquals(s.getScrobblePoint(), 50);
     }
 
-    public String toString() {
-        return getFullTitle();
+    public void test_scrobble_point_longest_track() {
+        when(track.getDuration()).thenReturn(480);
+
+        SongDetails s = new SongDetails(track);
+        assertEquals(s.getDuration(), 480);
+        assertEquals(s.getScrobblePoint(), 240);
     }
 
-    // access delegates for the TrackMeatadata for the Song.
+    public void test_scrobble_point_too_long_track() {
+        when(track.getDuration()).thenReturn(4800);
 
-    public String getArtist() {
-        return theTrack.getArtist().label;
-    }
-
-    public String getTitle() {
-        return theTrack.getTitle();
-    }
-
-    public String getAlbum() {
-        return theTrack.getAlbum().label;
-    }
-
-    public int getDuration() {
-        return theTrack.getDuration();
+        SongDetails s = new SongDetails(track);
+        assertEquals(s.getDuration(), 4800);
+        assertEquals(s.getScrobblePoint(), 240);
     }
 }

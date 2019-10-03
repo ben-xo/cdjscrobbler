@@ -25,29 +25,19 @@
  *
  */
 
-package am.xo.cdjscrobbler.SongEvents;
+package am.xo.cdjscrobbler;
 
-import am.xo.cdjscrobbler.SongEvent;
-import am.xo.cdjscrobbler.SongEventVisitor;
-import org.deepsymmetry.beatlink.CdjStatus;
+import am.xo.cdjscrobbler.SongEvents.*;
 
 /**
- * Event emitted by SongModel when we think the song has stopped or changed.
+ * Interface which visitors to SongEvents must implement. (Not all visitors need to handle all events, but all visitors
+ * must implement all methods). Both UpdateListener and QueueProcessor are SongEventVisitors, for different reasons.
  */
-public class ResetEvent implements SongEvent {
+public interface SongEventVisitor {
 
-    public CdjStatus cdjStatus;
-
-    public ResetEvent(CdjStatus s) {
-        this.cdjStatus = s;
-    }
-
-    @Override
-    public String toString() {
-        return String.format("** RESET (Song stopped or changed) **");
-    }
-
-    public void accept(SongEventVisitor visitor) {
-        visitor.visit(this);
-    }
+    void visit(NewSongLoadedEvent event);
+    void visit(NowPlayingEvent event);
+    void visit(ScrobbleEvent event);
+    void visit(ResetEvent event);
+    void visit(TransitionEvent event);
 }
