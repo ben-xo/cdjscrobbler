@@ -55,6 +55,7 @@ public class QueueProcessor implements SongEventVisitor {
     // TODO: generify this to decouple.
     private LastFmClient lfm;
     private TwitterClient twitter;
+    private DmcaAccountant dmcaAccountant = new DmcaAccountant();
 
     public QueueProcessor(LinkedBlockingQueue<SongEvent> songEvents) {
         this.songEventQueue = songEvents;
@@ -80,6 +81,7 @@ public class QueueProcessor implements SongEventVisitor {
     public void visit(NowPlayingEvent event) {
 
         // TODO: tell the DMCA song-warning plugin
+        dmcaAccountant.addPlayed(event.model.song);
 
         if(lfm != null) {
             lfm.updateNowPlaying(event);
@@ -117,7 +119,7 @@ public class QueueProcessor implements SongEventVisitor {
         // save it back to the model so it can be used to determine the scrobble point
         event.model.song = new SongDetails(metadata);
 
-        // TODO: tell the DMCA song-warning plugin
+        dmcaAccountant.checkIsSafeToPlay(event.model.song);
     }
 
     public void setLfm(LastFmClient lfm) {
