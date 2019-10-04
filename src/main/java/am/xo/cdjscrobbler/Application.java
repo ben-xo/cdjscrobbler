@@ -27,6 +27,8 @@
 
 package am.xo.cdjscrobbler;
 
+import com.github.scribejava.core.exceptions.OAuthException;
+import de.umass.lastfm.CallException;
 import org.deepsymmetry.beatlink.DeviceFinder;
 import org.deepsymmetry.beatlink.VirtualCdj;
 import org.deepsymmetry.beatlink.data.MetadataFinder;
@@ -35,6 +37,7 @@ import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.IOException;
+import java.net.UnknownHostException;
 import java.util.concurrent.LinkedBlockingQueue;
 
 /**
@@ -83,9 +86,12 @@ public class Application
             lfm = new LastFmClient(new LastFmClientConfig(config));
             try {
                 lfm.ensureUserIsConnected();
-            } catch (IOException e) {
-                e.printStackTrace();
-                System.exit(1);
+            } catch (CallException e) {
+                if(e.getCause() instanceof UnknownHostException) {
+                    logger.warn("** Looks like we're offline. Scrobbling disabled. **");
+                } else {
+                    throw e;
+                }
             }
         }
 
@@ -95,41 +101,24 @@ public class Application
             twitter = new TwitterClient(new TwitterClientConfig(config));
             try {
                 twitter.ensureUserIsConnected();
-            } catch (IOException e) {
-                e.printStackTrace();
-                System.exit(1);
+            } catch (OAuthException e) {
+                if(e.getCause() instanceof UnknownHostException) {
+                    logger.warn("** Looks like we're offline. Tweeting disabled. **");
+                } else {
+                    throw e;
+                }
             }
         }
 
-        logger.info("Starting DeviceFinder…");
-        DeviceFinder.getInstance().start();
-        while(DeviceFinder.getInstance().getCurrentDevices().isEmpty()) {
-            logger.info("Waiting for devices…");
-            Thread.sleep(1000);
-        }
-
-        VirtualCdj virtualCdj = VirtualCdj.getInstance();
-
-        logger.info("Starting VirtualCDJ…");
-        while(!virtualCdj.start()) {
-            logger.info("Retrying…");
-        }
-
-        // MediaFinder fails if there's only 1 CDJ on the network, because it can't impersonate an active device.
-        if(virtualCdj.getDeviceNumber() > 4 && DeviceFinder.getInstance().getCurrentDevices().size() == 1) {
-            virtualCdj.setDeviceNumber((byte) 4);
-        }
-
-        logger.info("Starting MetadataFinder…");
-        MetadataFinder.getInstance().start();
-
-        songEventQueue = new LinkedBlockingQueue<SongEvent>();
+        songEventQueue = new LinkedBlockingQueue<>();
 
         // start two threads with a shared queue
         // TODO: dynamically add and remove UpdateListeners as devices are announced
         logger.info( "Starting UpdateListener…" );
         updateListener = new UpdateListener(songEventQueue);
         VirtualCdj.getInstance().addUpdateListener(updateListener);
+
+        startVirtualCdj();
 
         logger.info( "Starting QueueProcessor…" );
         queueProcessor = new QueueProcessor(songEventQueue);
@@ -138,6 +127,89 @@ public class Application
         queueProcessor.start(); // this doesn't return until shutdown (or exception)
 
         // TODO: add a Lifecycle handler that shuts down when everything else shuts down
+        // need to respond to lifecycle shutdown events: stop everything and restart?
+        // queue processor should probably have its own thread.
+    }
+
+    private void startVirtualCdj() {
+        VirtualCdj virtualCdj = VirtualCdj.getInstance();
+        MetadataFinder metadataFinder = MetadataFinder.getInstance();
+        DeviceFinder deviceFinder = DeviceFinder.getInstance();
+
+        boolean started;
+
+        logger.info("Starting DeviceFinder…");
+
+        started = false;
+        do {
+            try {
+                deviceFinder.start();
+                started = deviceFinder.isRunning();
+            } catch(Exception e) {
+                logger.warn("Failed to start.", e);
+                try {
+                    Thread.sleep(1000);
+                } catch (InterruptedException ie) {
+                    // sure
+                }
+            }
+            if(!started) {
+                logger.info("Retrying…");
+            }
+        } while(!started);
+
+        while(DeviceFinder.getInstance().getCurrentDevices().isEmpty()) {
+            logger.info("Waiting for devices…");
+            try {
+                Thread.sleep(1000);
+            } catch (InterruptedException ie) {
+                // sure
+            }
+        }
+
+        logger.info("Starting VirtualCDJ…");
+
+        started = false;
+        do {
+            try {
+                started = virtualCdj.start();
+            } catch(Exception e) {
+                logger.warn("Failed to start.", e);
+                try {
+                    Thread.sleep(1000);
+                } catch (InterruptedException ie) {
+                    // sure
+                }
+            }
+            if(!started) {
+                logger.info("Retrying…");
+            }
+        } while(!started);
+
+        // MediaFinder fails if there's only 1 CDJ on the network, because it can't impersonate an active device.
+        if(virtualCdj.getDeviceNumber() > 4 && DeviceFinder.getInstance().getCurrentDevices().size() == 1) {
+            virtualCdj.setDeviceNumber((byte) 4);
+        }
+
+        logger.info("Starting MetadataFinder…");
+
+        started = false;
+        do {
+            try {
+                metadataFinder.start();
+                started = metadataFinder.isRunning();
+            } catch(Exception e) {
+                logger.warn("Failed to start.", e);
+                try {
+                    Thread.sleep(1000);
+                } catch (InterruptedException ie) {
+                    // sure
+                }
+            }
+            if(!started) {
+                logger.info("Retrying…");
+            }
+        } while(!started);
     }
 
     private static void loadConfig(String[] args) throws IOException {
