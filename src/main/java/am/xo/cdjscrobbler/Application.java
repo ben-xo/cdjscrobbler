@@ -30,6 +30,8 @@ package am.xo.cdjscrobbler;
 import com.github.scribejava.core.exceptions.OAuthException;
 import de.umass.lastfm.CallException;
 import org.deepsymmetry.beatlink.DeviceFinder;
+import org.deepsymmetry.beatlink.LifecycleListener;
+import org.deepsymmetry.beatlink.LifecycleParticipant;
 import org.deepsymmetry.beatlink.VirtualCdj;
 import org.deepsymmetry.beatlink.data.MetadataFinder;
 import org.slf4j.Logger;
@@ -53,11 +55,13 @@ import java.util.concurrent.LinkedBlockingQueue;
  * During set up, if configuration is missing for either Last.fm or Twitter, you will be prompted to authenticate.
  *
  */
-public class Application
+public class Application implements LifecycleListener
 {
     static final Logger logger = LoggerFactory.getLogger(Application.class);
     static final ComboConfig config = new ComboConfig();
     static final Application theApplication = new Application();
+
+    static int retryDelay = 500; // override with setting cdjscrobbler.retryDelayMs
 
     static boolean lfmEnabled;
     static boolean twitterEnabled;
@@ -76,6 +80,10 @@ public class Application
         logger.info( "💿📀💿📀 https://github.com/ben-xo/cdjscrobbler");
 
         theApplication.start();
+    }
+
+    public static void setRetryDelay(int delay) {
+        retryDelay = delay;
     }
 
     public void start() throws Exception
@@ -136,6 +144,10 @@ public class Application
         MetadataFinder metadataFinder = MetadataFinder.getInstance();
         DeviceFinder deviceFinder = DeviceFinder.getInstance();
 
+        virtualCdj.addLifecycleListener(this);
+        metadataFinder.addLifecycleListener(this);
+        deviceFinder.addLifecycleListener(this);
+
         boolean started;
 
         logger.info("Starting DeviceFinder…");
@@ -147,21 +159,21 @@ public class Application
                 started = deviceFinder.isRunning();
             } catch(Exception e) {
                 logger.warn("Failed to start.", e);
-                try {
-                    Thread.sleep(1000);
-                } catch (InterruptedException ie) {
-                    // sure
-                }
             }
             if(!started) {
                 logger.info("Retrying…");
+                try {
+                    Thread.sleep(retryDelay);
+                } catch (InterruptedException ie) {
+                    // sure
+                }
             }
         } while(!started);
 
         while(DeviceFinder.getInstance().getCurrentDevices().isEmpty()) {
             logger.info("Waiting for devices…");
             try {
-                Thread.sleep(1000);
+                Thread.sleep(retryDelay);
             } catch (InterruptedException ie) {
                 // sure
             }
@@ -175,14 +187,14 @@ public class Application
                 started = virtualCdj.start();
             } catch(Exception e) {
                 logger.warn("Failed to start.", e);
-                try {
-                    Thread.sleep(1000);
-                } catch (InterruptedException ie) {
-                    // sure
-                }
             }
             if(!started) {
                 logger.info("Retrying…");
+                try {
+                    Thread.sleep(retryDelay);
+                } catch (InterruptedException ie) {
+                    // sure
+                }
             }
         } while(!started);
 
@@ -200,14 +212,14 @@ public class Application
                 started = metadataFinder.isRunning();
             } catch(Exception e) {
                 logger.warn("Failed to start.", e);
-                try {
-                    Thread.sleep(1000);
-                } catch (InterruptedException ie) {
-                    // sure
-                }
             }
             if(!started) {
                 logger.info("Retrying…");
+                try {
+                    Thread.sleep(retryDelay);
+                } catch (InterruptedException ie) {
+                    // sure
+                }
             }
         } while(!started);
     }
@@ -235,12 +247,18 @@ public class Application
         }
 
         String nowPlayingPoint = config.getProperty("cdjscrobbler.model.nowPlayingPointMs", "");
+        String retryDelay = config.getProperty("cdjscrobbler.retryDelayMs", "500");
         String lfmEnabled = config.getProperty("cdjscrobbler.enable.lastfm", "false");
         String twitterEnabled = config.getProperty("cdjscrobbler.enable.twitter", "false");
 
         if(nowPlayingPoint != null && !nowPlayingPoint.isEmpty()) {
             logger.info("Loaded Now Playing Point of {} ms", nowPlayingPoint);
             SongModel.setNowPlayingPoint(Integer.parseInt(nowPlayingPoint));
+        }
+
+        if(retryDelay != null && !retryDelay.isEmpty()) {
+            logger.info("Loaded Retry Delay of {} ms", retryDelay);
+            setRetryDelay(Integer.parseInt(nowPlayingPoint));
         }
 
         if(Boolean.parseBoolean(lfmEnabled)) {
@@ -258,5 +276,16 @@ public class Application
             logger.warn("* Tweeting tracks disabled. set cdjscrobbler.enable.twitter=true in your config *");
             logger.warn("*********************************************************************************");
         }
+    }
+
+    @Override
+    public void started(LifecycleParticipant sender) {
+        // jolly good!
+    }
+
+    @Override
+    public void stopped(LifecycleParticipant sender) {
+        logger.info("Attempting to restart.");
+        startVirtualCdj();
     }
 }
