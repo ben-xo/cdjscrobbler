@@ -86,10 +86,9 @@ public class Application implements LifecycleListener
         retryDelay = delay;
     }
 
-    public void start() throws Exception
-    {
+    public static LastFmClient getLfmClient(boolean enabled) throws IOException {
         LastFmClient lfm = null;
-        if(lfmEnabled) {
+        if(enabled) {
             logger.info("Starting Last.fm Scrobbler…");
             lfm = new LastFmClient(new LastFmClientConfig(config));
             try {
@@ -102,9 +101,12 @@ public class Application implements LifecycleListener
                 }
             }
         }
+        return lfm;
+    }
 
+    public static TwitterClient getTwitterClient(boolean enabled) throws IOException {
         TwitterClient twitter = null;
-        if(twitterEnabled) {
+        if(enabled) {
             logger.info("Starting Twitter bot…");
             twitter = new TwitterClient(new TwitterClientConfig(config));
             try {
@@ -117,6 +119,13 @@ public class Application implements LifecycleListener
                 }
             }
         }
+        return twitter;
+    }
+
+    public void start() throws Exception
+    {
+        LastFmClient lfm = getLfmClient(lfmEnabled);
+        TwitterClient twitter = getTwitterClient(twitterEnabled);
 
         songEventQueue = new LinkedBlockingQueue<>();
 
@@ -134,9 +143,7 @@ public class Application implements LifecycleListener
         if(twitterEnabled) queueProcessor.setTwitter(twitter);
         queueProcessor.start(); // this doesn't return until shutdown (or exception)
 
-        // TODO: add a Lifecycle handler that shuts down when everything else shuts down
-        // need to respond to lifecycle shutdown events: stop everything and restart?
-        // queue processor should probably have its own thread.
+        // TODO: queue processor should probably have its own thread.
     }
 
     private void startVirtualCdj() {
