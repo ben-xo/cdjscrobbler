@@ -293,6 +293,11 @@ public class Application implements LifecycleListener
     @Override
     public void stopped(LifecycleParticipant sender) {
         logger.info("Attempting to restart.");
-        startVirtualCdj();
+        try {
+            startVirtualCdj();
+        } catch(InterruptedException e) {
+            // looks like the app was shutting down. Accept fate.
+        }
     }
+
 }
