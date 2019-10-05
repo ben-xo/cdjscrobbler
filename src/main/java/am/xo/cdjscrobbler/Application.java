@@ -34,6 +34,7 @@ import org.deepsymmetry.beatlink.LifecycleListener;
 import org.deepsymmetry.beatlink.LifecycleParticipant;
 import org.deepsymmetry.beatlink.VirtualCdj;
 import org.deepsymmetry.beatlink.data.MetadataFinder;
+import org.deepsymmetry.beatlink.dbserver.ConnectionManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -147,44 +148,14 @@ public class Application implements LifecycleListener
     }
 
     private void startVirtualCdj() throws InterruptedException {
+        ConnectionManager connectionManager = ConnectionManager.getInstance();
         VirtualCdj virtualCdj = VirtualCdj.getInstance();
         MetadataFinder metadataFinder = MetadataFinder.getInstance();
-        DeviceFinder deviceFinder = DeviceFinder.getInstance();
 
-        virtualCdj.addLifecycleListener(this);
+        connectionManager.setSocketTimeout(3000);
         metadataFinder.addLifecycleListener(this);
-        deviceFinder.addLifecycleListener(this);
 
         boolean started;
-
-        logger.info("Starting DeviceFinder…");
-
-        started = false;
-        do {
-            try {
-                deviceFinder.start();
-                started = deviceFinder.isRunning();
-            } catch(Exception e) {
-                logger.warn("Failed to start.", e);
-            }
-            if(!started) {
-                logger.info("Retrying…");
-                try {
-                    Thread.sleep(retryDelay);
-                } catch (InterruptedException ie) {
-                    // sure
-                }
-            }
-        } while(!started);
-
-        while(DeviceFinder.getInstance().getCurrentDevices().isEmpty()) {
-            logger.info("Waiting for devices…");
-            try {
-                Thread.sleep(retryDelay);
-            } catch (InterruptedException ie) {
-                // sure
-            }
-        }
 
         logger.info("Starting VirtualCDJ…");
 
@@ -196,12 +167,8 @@ public class Application implements LifecycleListener
                 logger.warn("Failed to start.", e);
             }
             if(!started) {
-                logger.info("Retrying…");
-                try {
-                    Thread.sleep(retryDelay);
-                } catch (InterruptedException ie) {
-                    // sure
-                }
+                logger.info("Retrying VirtualCdj…");
+                Thread.sleep(retryDelay);
             }
         } while(!started);
 
@@ -221,14 +188,11 @@ public class Application implements LifecycleListener
                 logger.warn("Failed to start.", e);
             }
             if(!started) {
-                logger.info("Retrying…");
-                try {
-                    Thread.sleep(retryDelay);
-                } catch (InterruptedException ie) {
-                    // sure
-                }
+                logger.info("Retrying MetadataFinder…");
+                Thread.sleep(retryDelay);
             }
         } while(!started);
+
     }
 
     private static void loadConfig(String[] args) throws IOException {
@@ -292,7 +256,7 @@ public class Application implements LifecycleListener
 
     @Override
     public void stopped(LifecycleParticipant sender) {
-        logger.info("Attempting to restart.");
+        logger.info("Attempting to restart because {} stopped", sender);
         try {
             startVirtualCdj();
         } catch(InterruptedException e) {
