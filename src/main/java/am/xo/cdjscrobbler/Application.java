@@ -146,7 +146,7 @@ public class Application implements LifecycleListener
         // TODO: queue processor should probably have its own thread.
     }
 
-    private void startVirtualCdj() {
+    private void startVirtualCdj() throws InterruptedException {
         VirtualCdj virtualCdj = VirtualCdj.getInstance();
         MetadataFinder metadataFinder = MetadataFinder.getInstance();
         DeviceFinder deviceFinder = DeviceFinder.getInstance();
