@@ -116,10 +116,13 @@ public class QueueProcessor implements SongEventVisitor {
         TrackMetadata metadata = MetadataFinder.getInstance().requestMetadataFrom(event.cdjStatus);
         logger.info("Song: " + metadata);
 
-        // save it back to the model so it can be used to determine the scrobble point
-        event.model.song = new SongDetails(metadata);
+        if(metadata != null) {
+            // save it back to the model so it can be used to determine the scrobble point
+            event.model.song = new SongDetails(metadata);
 
-        dmcaAccountant.checkIsSafeToPlay(event.model.song);
+            // warn if playing the song might make the mix unstreamable on radio or on Mixcloud etc
+            dmcaAccountant.checkIsSafeToPlay(event.model.song);
+        }
     }
 
     public void setLfm(LastFmClient lfm) {
