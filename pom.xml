@@ -87,7 +87,7 @@
     <dependency>
       <groupId>org.deepsymmetry</groupId>
       <artifactId>beat-link</artifactId>
-      <version>0.4.1</version>
+      <version>0.5.2</version>
     </dependency>
     <!--
       ⚠️  Note ⚠️  lastfm-java 0.1.2 does not have HTTPS. So instead of depending on the latest mvn version (from 2012),
