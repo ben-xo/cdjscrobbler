@@ -27,9 +27,15 @@
 
 package am.xo.cdjscrobbler;
 
+import am.xo.cdjscrobbler.SongEventListeners.NowPlayingListener;
+import am.xo.cdjscrobbler.SongEventListeners.ScrobbleListener;
 import am.xo.cdjscrobbler.SongEvents.NowPlayingEvent;
 import am.xo.cdjscrobbler.SongEvents.ScrobbleEvent;
-import de.umass.lastfm.*;
+import de.umass.lastfm.Authenticator;
+import de.umass.lastfm.Caller;
+import de.umass.lastfm.Session;
+import de.umass.lastfm.Track;
+import de.umass.lastfm.User;
 import de.umass.lastfm.scrobble.ScrobbleData;
 import de.umass.lastfm.scrobble.ScrobbleResult;
 import org.slf4j.Logger;
@@ -46,7 +52,7 @@ import java.io.IOException;
  *
  * Scrobbling has various rules about when it should be done - see https://www.last.fm/api/scrobbling
  */
-public class LastFmClient {
+public class LastFmClient implements NowPlayingListener, ScrobbleListener {
 
     static final Logger logger = LoggerFactory.getLogger(LastFmClient.class);
 
@@ -159,7 +165,8 @@ public class LastFmClient {
         return theScrobble;
     }
 
-    public void updateNowPlaying(NowPlayingEvent npe) {
+    @Override
+    public void nowPlaying(NowPlayingEvent npe) {
         SongModel model = npe.model;
         ScrobbleData theScrobble = getScrobbleDataFor(model);
         if(theScrobble != null) {
@@ -173,6 +180,7 @@ public class LastFmClient {
         }
     }
 
+    @Override
     public void scrobble(ScrobbleEvent e) {
         SongModel model = e.model;
         ScrobbleData theScrobble = getScrobbleDataFor(model);

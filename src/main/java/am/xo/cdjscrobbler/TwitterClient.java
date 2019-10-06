@@ -27,10 +27,15 @@
 
 package am.xo.cdjscrobbler;
 
+import am.xo.cdjscrobbler.SongEventListeners.NowPlayingListener;
 import am.xo.cdjscrobbler.SongEvents.NowPlayingEvent;
 import com.github.scribejava.apis.TwitterApi;
 import com.github.scribejava.core.builder.ServiceBuilder;
-import com.github.scribejava.core.model.*;
+import com.github.scribejava.core.model.OAuth1AccessToken;
+import com.github.scribejava.core.model.OAuth1RequestToken;
+import com.github.scribejava.core.model.OAuthRequest;
+import com.github.scribejava.core.model.Response;
+import com.github.scribejava.core.model.Verb;
 import com.github.scribejava.core.oauth.OAuth10aService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -50,7 +55,7 @@ import java.util.concurrent.ExecutionException;
  * Call ensureUserIsConnected() to make sure we have a valid session, then sendNowPlaying to take action!
  *
  */
-public class TwitterClient {
+public class TwitterClient implements NowPlayingListener {
 
     private static final String PROTECTED_RESOURCE_URL = "https://api.twitter.com/1.1/account/verify_credentials.json";
 
@@ -175,7 +180,8 @@ public class TwitterClient {
         return accessToken;
     }
 
-    public void sendNowPlaying(NowPlayingEvent npe) {
+    @Override
+    public void nowPlaying(NowPlayingEvent npe) {
         Twitter twitter = getTwitterFromConfig();
         SongDetails song = npe.model.getSong();
         String[] params = { song.getFullTitle() };

@@ -124,6 +124,7 @@ public class Application implements LifecycleListener
     {
         LastFmClient lfm = getLfmClient(lfmEnabled);
         TwitterClient twitter = getTwitterClient(twitterEnabled);
+        DmcaAccountant dmcaAccountant = new DmcaAccountant();
 
         songEventQueue = new LinkedBlockingQueue<>();
 
@@ -137,8 +138,19 @@ public class Application implements LifecycleListener
 
         logger.info( "Starting QueueProcessor…" );
         queueProcessor = new QueueProcessor(songEventQueue);
-        if(lfmEnabled)     queueProcessor.setLfm(lfm);
-        if(twitterEnabled) queueProcessor.setTwitter(twitter);
+
+        queueProcessor.addNewSongLoadedListener(dmcaAccountant);
+        queueProcessor.addNowPlayingListener(dmcaAccountant);
+
+        if(lfmEnabled)     {
+            queueProcessor.addNowPlayingListener(lfm);
+            queueProcessor.addScrobbleListener(lfm);
+        }
+
+        if(twitterEnabled) {
+            queueProcessor.addNowPlayingListener(twitter);
+        }
+
         queueProcessor.start(); // this doesn't return until shutdown (or exception)
 
         // TODO: queue processor should probably have its own thread.

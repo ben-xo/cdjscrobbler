@@ -27,6 +27,10 @@
 
 package am.xo.cdjscrobbler;
 
+import am.xo.cdjscrobbler.SongEventListeners.NewSongLoadedListener;
+import am.xo.cdjscrobbler.SongEventListeners.NowPlayingListener;
+import am.xo.cdjscrobbler.SongEvents.NewSongLoadedEvent;
+import am.xo.cdjscrobbler.SongEvents.NowPlayingEvent;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -37,10 +41,20 @@ import java.util.ArrayList;
  * would prevent your show being aired unrestricted on Mixcloud or other services which follow the "No more than 4 songs
  * by the same artist" DMCA rule
  */
-public class DmcaAccountant {
+public class DmcaAccountant implements NowPlayingListener, NewSongLoadedListener {
     static final Logger logger = LoggerFactory.getLogger(Application.class);
 
     ArrayList<SongDetails> played = new ArrayList<>();
+
+    @Override
+    public void newSongLoaded(NewSongLoadedEvent event) {
+        checkIsSafeToPlay(event.model.song);
+    }
+
+    @Override
+    public void nowPlaying(NowPlayingEvent event) {
+        addPlayed(event.model.song);
+    }
 
     public void addPlayed(SongDetails song) {
         if(song == null) {
@@ -58,6 +72,9 @@ public class DmcaAccountant {
     }
 
     public boolean isSafeToPlay(SongDetails song) {
+        if(song == null) {
+            return true;
+        }
         if(getArtistPlayCount(song.getArtist()) >= 4) {
             logger.warn("❌ You have already played artist {} 4 times this show.", song.getArtist());
             return false;
