@@ -100,7 +100,8 @@ public class SongModel {
         if(prevState != currentState || currentState.isMoving() ) {
             // only log transitions and playing states - a lot of boring STOPPED messages otherwise
 
-            logger.info("Device {} rekordbox ID {} {} -> {}", deviceNumber, rekordboxId, prevState.name(), this);
+            logger.info("Device {} rekordbox ID {} {} -> {}",
+                    deviceNumber, rekordboxId, prevState.name(), this.shortString());
         }
 
         lastUpdate = update.getTimestamp();
@@ -163,7 +164,11 @@ public class SongModel {
     }
 
     public String toString() {
-        return "Device " + Integer.toString(deviceNumber) + " " + currentState.name()
+        return "Device " + Integer.toString(deviceNumber) + " " + shortString();
+    }
+
+    public String shortString() {
+        return currentState.name()
                 + " song: " + (song == null ? "<unknown>" : song)
                 + " playtime: " + Long.toString(totalPlayTime) + " ms";
     }

@@ -69,7 +69,7 @@ public class QueueProcessor implements SongEventVisitor {
     public void start() throws InterruptedException {
         while(true) {
             SongEvent songEvent = songEventQueue.take(); // this blocks until an event is ready.
-            logger.info("Received event " + songEvent);
+            logger.info("Received event {}", songEvent);
 
             // Visitor pattern. Go visit the event, to have it call back to the right handler on this class.
             // (One wonders if it's worth it, just to avoid smelly "instanceof")
@@ -80,15 +80,31 @@ public class QueueProcessor implements SongEventVisitor {
     @Override
     public void visit(NowPlayingEvent event) {
 
-        // TODO: tell the DMCA song-warning plugin
-        dmcaAccountant.addPlayed(event.model.song);
+        if(event.model.song == null) {
+            // Second, and final chance to work out what song it is (in case MetadataFinder is being slow).
+            // The next state, Scrobbling, depends on knowing the song length, so if we can't get this here
+            // then the song will remain anonymous and will never scrobble or tweet.
+            TrackMetadata metadata = MetadataFinder.getInstance().requestMetadataFrom(event.cdjStatus);
+            logger.info("Song: {}", metadata);
 
-        if(lfm != null) {
-            lfm.updateNowPlaying(event);
+            if (metadata != null) {
+                // save it back to the model so it can be used to determine the scrobble point
+                event.model.song = new SongDetails(metadata);
+            }
         }
 
-        if(twitter != null) {
-            twitter.sendNowPlaying(event);
+        if(event.model.song != null) {
+
+            // TODO: tell the DMCA song-warning plugin
+            dmcaAccountant.addPlayed(event.model.song);
+
+            if (lfm != null) {
+                lfm.updateNowPlaying(event);
+            }
+
+            if (twitter != null) {
+                twitter.sendNowPlaying(event);
+            }
         }
     }
 
@@ -111,15 +127,17 @@ public class QueueProcessor implements SongEventVisitor {
 
     @Override
     public void visit(NewSongLoadedEvent event) {
-        // NowPlaying events indicate that we've played enough of the song to start caring about
-        // what it actually is. (The next state, Scrobbling, depends on knowing the song length)
+        // First attempt to look up the song length. Opportunity for an early warning that you shouldn't play the song.
         TrackMetadata metadata = MetadataFinder.getInstance().requestMetadataFrom(event.cdjStatus);
-        logger.info("Song: " + metadata);
+        logger.info("Song: {}", metadata);
 
-        // save it back to the model so it can be used to determine the scrobble point
-        event.model.song = new SongDetails(metadata);
+        if(metadata != null) {
+            // save it back to the model so it can be used to determine the scrobble point
+            event.model.song = new SongDetails(metadata);
 
-        dmcaAccountant.checkIsSafeToPlay(event.model.song);
+            // warn if playing the song might make the mix unstreamable on radio or on Mixcloud etc
+            dmcaAccountant.checkIsSafeToPlay(event.model.song);
+        }
     }
 
     public void setLfm(LastFmClient lfm) {

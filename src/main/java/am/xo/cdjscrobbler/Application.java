@@ -27,14 +27,17 @@
 
 package am.xo.cdjscrobbler;
 
-import org.deepsymmetry.beatlink.DeviceFinder;
-import org.deepsymmetry.beatlink.VirtualCdj;
+import com.github.scribejava.core.exceptions.OAuthException;
+import de.umass.lastfm.CallException;
+import org.deepsymmetry.beatlink.*;
 import org.deepsymmetry.beatlink.data.MetadataFinder;
+import org.deepsymmetry.beatlink.dbserver.ConnectionManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.IOException;
+import java.net.UnknownHostException;
 import java.util.concurrent.LinkedBlockingQueue;
 
 /**
@@ -50,11 +53,13 @@ import java.util.concurrent.LinkedBlockingQueue;
  * During set up, if configuration is missing for either Last.fm or Twitter, you will be prompted to authenticate.
  *
  */
-public class Application
+public class Application implements LifecycleListener
 {
     static final Logger logger = LoggerFactory.getLogger(Application.class);
     static final ComboConfig config = new ComboConfig();
     static final Application theApplication = new Application();
+
+    static int retryDelay = 500; // override with setting cdjscrobbler.retryDelayMs
 
     static boolean lfmEnabled;
     static boolean twitterEnabled;
@@ -75,55 +80,52 @@ public class Application
         theApplication.start();
     }
 
-    public void start() throws Exception
-    {
+    public static void setRetryDelay(int delay) {
+        retryDelay = delay;
+    }
+
+    public static LastFmClient getLfmClient(boolean enabled) throws IOException {
         LastFmClient lfm = null;
-        if(lfmEnabled) {
+        if(enabled) {
             logger.info("Starting Last.fm Scrobbler…");
             lfm = new LastFmClient(new LastFmClientConfig(config));
             try {
                 lfm.ensureUserIsConnected();
-            } catch (IOException e) {
-                e.printStackTrace();
-                System.exit(1);
+            } catch (CallException e) {
+                if(e.getCause() instanceof UnknownHostException) {
+                    logger.warn("** Looks like we're offline. Scrobbling disabled. **");
+                } else {
+                    throw e;
+                }
             }
         }
+        return lfm;
+    }
 
+    public static TwitterClient getTwitterClient(boolean enabled) throws IOException {
         TwitterClient twitter = null;
-        if(twitterEnabled) {
+        if(enabled) {
             logger.info("Starting Twitter bot…");
             twitter = new TwitterClient(new TwitterClientConfig(config));
             try {
                 twitter.ensureUserIsConnected();
-            } catch (IOException e) {
-                e.printStackTrace();
-                System.exit(1);
+            } catch (OAuthException e) {
+                if(e.getCause() instanceof UnknownHostException) {
+                    logger.warn("** Looks like we're offline. Tweeting disabled. **");
+                } else {
+                    throw e;
+                }
             }
         }
+        return twitter;
+    }
 
-        logger.info("Starting DeviceFinder…");
-        DeviceFinder.getInstance().start();
-        while(DeviceFinder.getInstance().getCurrentDevices().isEmpty()) {
-            logger.info("Waiting for devices…");
-            Thread.sleep(1000);
-        }
+    public void start() throws Exception
+    {
+        LastFmClient lfm = getLfmClient(lfmEnabled);
+        TwitterClient twitter = getTwitterClient(twitterEnabled);
 
-        VirtualCdj virtualCdj = VirtualCdj.getInstance();
-
-        logger.info("Starting VirtualCDJ…");
-        while(!virtualCdj.start()) {
-            logger.info("Retrying…");
-        }
-
-        // MediaFinder fails if there's only 1 CDJ on the network, because it can't impersonate an active device.
-        if(virtualCdj.getDeviceNumber() > 4 && DeviceFinder.getInstance().getCurrentDevices().size() == 1) {
-            virtualCdj.setDeviceNumber((byte) 4);
-        }
-
-        logger.info("Starting MetadataFinder…");
-        MetadataFinder.getInstance().start();
-
-        songEventQueue = new LinkedBlockingQueue<SongEvent>();
+        songEventQueue = new LinkedBlockingQueue<>();
 
         // start two threads with a shared queue
         // TODO: dynamically add and remove UpdateListeners as devices are announced
@@ -131,13 +133,86 @@ public class Application
         updateListener = new UpdateListener(songEventQueue);
         VirtualCdj.getInstance().addUpdateListener(updateListener);
 
+        startVirtualCdj();
+
         logger.info( "Starting QueueProcessor…" );
         queueProcessor = new QueueProcessor(songEventQueue);
         if(lfmEnabled)     queueProcessor.setLfm(lfm);
         if(twitterEnabled) queueProcessor.setTwitter(twitter);
         queueProcessor.start(); // this doesn't return until shutdown (or exception)
 
-        // TODO: add a Lifecycle handler that shuts down when everything else shuts down
+        // TODO: queue processor should probably have its own thread.
+    }
+
+    private void startVirtualCdj() throws InterruptedException {
+        ConnectionManager connectionManager = ConnectionManager.getInstance();
+        VirtualCdj virtualCdj = VirtualCdj.getInstance();
+        MetadataFinder metadataFinder = MetadataFinder.getInstance();
+
+        connectionManager.setSocketTimeout(3000);
+        metadataFinder.addLifecycleListener(this);
+
+        boolean started;
+
+        logger.info("Starting VirtualCDJ…");
+
+        started = false;
+        do {
+            try {
+                started = virtualCdj.start();
+            } catch(Exception e) {
+                logger.warn("Failed to start.", e);
+            }
+            if(!started) {
+                logger.info("Retrying VirtualCdj…");
+                Thread.sleep(retryDelay);
+            }
+        } while(!started);
+
+        // MediaFinder fails if there's only 1 CDJ on the network, because it can't impersonate an active device.
+        // It also fails if there are two on the network and they're both using Pro Link at the same time.
+        if(virtualCdj.getDeviceNumber() > 4) {
+            try {
+                byte newDeviceNumber = getFreeLowDeviceNumber();
+                virtualCdj.setDeviceNumber(newDeviceNumber);
+                logger.info("Set virtual CDJ device number to {}", newDeviceNumber);
+            } catch(IllegalStateException e) {
+                logger.error("Looks like metadata finder isn't going to work: no free low device numbers.");
+            }
+        }
+
+        logger.info("Starting MetadataFinder…");
+
+        started = false;
+        do {
+            try {
+                metadataFinder.start();
+                started = metadataFinder.isRunning();
+            } catch(Exception e) {
+                logger.warn("Failed to start.", e);
+            }
+            if(!started) {
+                logger.info("Retrying MetadataFinder…");
+                Thread.sleep(retryDelay);
+            }
+        } while(!started);
+
+    }
+
+    private byte getFreeLowDeviceNumber() {
+        boolean[] taken = {false, false, false, false, false};
+        for (DeviceAnnouncement a : DeviceFinder.getInstance().getCurrentDevices()) {
+            int deviceNumber = a.getNumber();
+            if(deviceNumber <= 4) {
+                taken[deviceNumber] = true;
+            }
+        }
+        for(byte t = 1; t <= 4; t++) {
+            if(!taken[t]) {
+                return t;
+            }
+        }
+        throw new IllegalStateException("No free low device numbers");
     }
 
     private static void loadConfig(String[] args) throws IOException {
@@ -163,12 +238,18 @@ public class Application
         }
 
         String nowPlayingPoint = config.getProperty("cdjscrobbler.model.nowPlayingPointMs", "");
+        String retryDelay = config.getProperty("cdjscrobbler.retryDelayMs", "500");
         String lfmEnabled = config.getProperty("cdjscrobbler.enable.lastfm", "false");
         String twitterEnabled = config.getProperty("cdjscrobbler.enable.twitter", "false");
 
         if(nowPlayingPoint != null && !nowPlayingPoint.isEmpty()) {
             logger.info("Loaded Now Playing Point of {} ms", nowPlayingPoint);
             SongModel.setNowPlayingPoint(Integer.parseInt(nowPlayingPoint));
+        }
+
+        if(retryDelay != null && !retryDelay.isEmpty()) {
+            logger.info("Loaded Retry Delay of {} ms", retryDelay);
+            setRetryDelay(Integer.parseInt(nowPlayingPoint));
         }
 
         if(Boolean.parseBoolean(lfmEnabled)) {
@@ -187,4 +268,20 @@ public class Application
             logger.warn("*********************************************************************************");
         }
     }
+
+    @Override
+    public void started(LifecycleParticipant sender) {
+        // jolly good!
+    }
+
+    @Override
+    public void stopped(LifecycleParticipant sender) {
+        logger.info("Attempting to restart because {} stopped", sender);
+        try {
+            startVirtualCdj();
+        } catch(InterruptedException e) {
+            // looks like the app was shutting down. Accept fate.
+        }
+    }
+
 }

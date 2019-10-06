@@ -47,7 +47,7 @@ public class NewSongLoadedEvent implements SongEvent {
 
     @Override
     public String toString() {
-        return String.format("** NOW PLAYING **");
+        return String.format("** NEW SONG LOADED **");
     }
 
     public void accept(SongEventVisitor visitor) {
