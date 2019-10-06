@@ -70,7 +70,7 @@ public class SongDetails {
         return getFullTitle();
     }
 
-    // access delegates for the TrackMeatadata for the Song.
+    // access delegates for the TrackMetadata for the Song.
 
     public String getArtist() {
         return theTrack.getArtist().label;
