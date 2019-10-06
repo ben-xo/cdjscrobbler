@@ -27,6 +27,7 @@
 
 package am.xo.cdjscrobbler;
 
+import am.xo.cdjscrobbler.Plugins.*;
 import com.github.scribejava.core.exceptions.OAuthException;
 import de.umass.lastfm.CallException;
 import org.deepsymmetry.beatlink.*;
@@ -56,7 +57,7 @@ import java.util.concurrent.LinkedBlockingQueue;
 public class Application implements LifecycleListener
 {
     static final Logger logger = LoggerFactory.getLogger(Application.class);
-    static final ComboConfig config = new ComboConfig();
+    static final ApplicationConfig config = new ApplicationConfig();
     static final Application theApplication = new Application();
 
     static int retryDelay = 500; // override with setting cdjscrobbler.retryDelayMs
@@ -257,7 +258,7 @@ public class Application implements LifecycleListener
         try {
             // load e.g. Last.fm and Twitter keys and tokens
             logger.info("Loading local client configuration");
-            ConfigFileUtil.load(config, localConfigFile);
+            config.load();
         } catch (IOException ioe) {
             logger.error("Error loading config properties from {}", localConfigFile, ioe);
             throw ioe;

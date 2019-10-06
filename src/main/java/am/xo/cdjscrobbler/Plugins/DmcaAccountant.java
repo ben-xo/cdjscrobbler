@@ -25,8 +25,10 @@
  *
  */
 
-package am.xo.cdjscrobbler;
+package am.xo.cdjscrobbler.Plugins;
 
+import am.xo.cdjscrobbler.Application;
+import am.xo.cdjscrobbler.SongDetails;
 import am.xo.cdjscrobbler.SongEventListeners.NewSongLoadedListener;
 import am.xo.cdjscrobbler.SongEventListeners.NowPlayingListener;
 import am.xo.cdjscrobbler.SongEvents.NewSongLoadedEvent;
@@ -48,12 +50,12 @@ public class DmcaAccountant implements NowPlayingListener, NewSongLoadedListener
 
     @Override
     public void newSongLoaded(NewSongLoadedEvent event) {
-        checkIsSafeToPlay(event.model.song);
+        checkIsSafeToPlay(event.model.getSong());
     }
 
     @Override
     public void nowPlaying(NowPlayingEvent event) {
-        addPlayed(event.model.song);
+        addPlayed(event.model.getSong());
     }
 
     public void addPlayed(SongDetails song) {

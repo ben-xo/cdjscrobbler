@@ -25,17 +25,14 @@
  *
  */
 
-package am.xo.cdjscrobbler;
+package am.xo.cdjscrobbler.Plugins;
 
+import am.xo.cdjscrobbler.SongDetails;
 import am.xo.cdjscrobbler.SongEventListeners.NowPlayingListener;
 import am.xo.cdjscrobbler.SongEvents.NowPlayingEvent;
 import com.github.scribejava.apis.TwitterApi;
 import com.github.scribejava.core.builder.ServiceBuilder;
-import com.github.scribejava.core.model.OAuth1AccessToken;
-import com.github.scribejava.core.model.OAuth1RequestToken;
-import com.github.scribejava.core.model.OAuthRequest;
-import com.github.scribejava.core.model.Response;
-import com.github.scribejava.core.model.Verb;
+import com.github.scribejava.core.model.*;
 import com.github.scribejava.core.oauth.OAuth10aService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -119,9 +116,9 @@ public class TwitterClient implements NowPlayingListener {
 
     public void saveCredentials(String OAuthAccessToken, String OAuthAccessTokenSecret) {
         try {
-            Application.config.setProperty("twitter4j.oauth.accessToken", OAuthAccessToken);
-            Application.config.setProperty("twitter4j.oauth.accessTokenSecret", OAuthAccessTokenSecret);
-            ConfigFileUtil.save(Application.config, Application.localConfigFile);
+            config.setOauthAccessToken(OAuthAccessToken);
+            config.setOauthAccessTokenSecret(OAuthAccessTokenSecret);
+            config.save();
         } catch (IOException ex) {
             logger.error("🚫 Saving credentials failed!", ex);
             // carry on anyway

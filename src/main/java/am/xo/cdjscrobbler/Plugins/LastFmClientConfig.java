@@ -25,50 +25,48 @@
  *
  */
 
-package am.xo.cdjscrobbler;
+package am.xo.cdjscrobbler.Plugins;
+
+import am.xo.cdjscrobbler.ApplicationConfig;
 
 import java.io.IOException;
-import java.util.Properties;
-
 
 public class LastFmClientConfig {
 
-    private String apiKey    = "";
-    private String apiSecret = "";
-    private String apiSk     = "";
-    private String userAgent = "";
+    private ApplicationConfig config;
 
-    public LastFmClientConfig(Properties config) {
-        apiKey    = config.getProperty("lastfm.api.key", "");
-        apiSecret = config.getProperty("lastfm.api.secret", "");
-        apiSk     = config.getProperty("lastfm.api.sk", "");
-        userAgent = config.getProperty("cdjscrobbler.useragent", "CDJ Scrobbler");
+    public LastFmClientConfig(ApplicationConfig config) {
+        this.config = config;
     }
 
     public String getApiKey() {
-        return apiKey;
+        return config.getProperty("lastfm.api.key", "");
     }
 
     public String getApiSecret() {
-        return apiSecret;
+        return config.getProperty("lastfm.api.secret", "");
     }
 
     public String getUserAgent() {
-        return userAgent;
+        return config.getProperty("cdjscrobbler.useragent", "CDJ Scrobbler");
     }
 
     public String getApiSk() {
-        return apiSk;
+        return config.getProperty("lastfm.api.sk", "");
     }
 
     public void setApiSk(String apiSk) {
-        this.apiSk = apiSk;
+        config.setProperty("lastfm.api.sk", apiSk);
     }
 
     public void assertConfigured() throws IOException {
-        if (apiKey.isEmpty() || apiSecret.isEmpty()) {
+        if (getApiKey().isEmpty() || getApiSecret().isEmpty()) {
             String msg = "You need to put a Last.fm API key and API secret into your config. https://www.last.fm/api";
             throw new IOException(msg);
         }
+    }
+
+    public void save() throws IOException {
+        config.save();
     }
 }

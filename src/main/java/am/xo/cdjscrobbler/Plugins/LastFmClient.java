@@ -25,17 +25,15 @@
  *
  */
 
-package am.xo.cdjscrobbler;
+package am.xo.cdjscrobbler.Plugins;
 
+import am.xo.cdjscrobbler.SongDetails;
 import am.xo.cdjscrobbler.SongEventListeners.NowPlayingListener;
 import am.xo.cdjscrobbler.SongEventListeners.ScrobbleListener;
 import am.xo.cdjscrobbler.SongEvents.NowPlayingEvent;
 import am.xo.cdjscrobbler.SongEvents.ScrobbleEvent;
-import de.umass.lastfm.Authenticator;
-import de.umass.lastfm.Caller;
-import de.umass.lastfm.Session;
-import de.umass.lastfm.Track;
-import de.umass.lastfm.User;
+import am.xo.cdjscrobbler.SongModel;
+import de.umass.lastfm.*;
 import de.umass.lastfm.scrobble.ScrobbleData;
 import de.umass.lastfm.scrobble.ScrobbleResult;
 import org.slf4j.Logger;
@@ -133,8 +131,8 @@ public class LastFmClient implements NowPlayingListener, ScrobbleListener {
 
     public void saveCredentials(String apiSk) {
         try {
-            Application.config.setProperty("lastfm.api.sk", apiSk);
-            ConfigFileUtil.save(Application.config, Application.localConfigFile);
+            config.setApiSk(apiSk);
+            config.save();
         } catch (IOException ex) {
             logger.error("🚫 Saving credentials failed!", ex);
             // carry on anyway
