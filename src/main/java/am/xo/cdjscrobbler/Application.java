@@ -149,6 +149,7 @@ public class Application implements LifecycleListener
         VirtualCdj virtualCdj = VirtualCdj.getInstance();
         MetadataFinder metadataFinder = MetadataFinder.getInstance();
 
+        // default is 10s, which is quite high when recovering from a network outage
         connectionManager.setSocketTimeout(3000);
         metadataFinder.addLifecycleListener(this);
 
@@ -218,7 +219,9 @@ public class Application implements LifecycleListener
                 taken[deviceNumber] = true;
             }
         }
-        for(byte t = 1; t <= 4; t++) {
+
+        // try for 4 first.
+        for(byte t = 4; t > 0; t--) {
             if(!taken[t]) {
                 return t;
             }
