@@ -149,6 +149,7 @@ public class Application implements LifecycleListener
         VirtualCdj virtualCdj = VirtualCdj.getInstance();
         MetadataFinder metadataFinder = MetadataFinder.getInstance();
 
+        // default is 10s, which is quite high when recovering from a network outage
         connectionManager.setSocketTimeout(3000);
         metadataFinder.addLifecycleListener(this);
 
@@ -199,6 +200,17 @@ public class Application implements LifecycleListener
 
     }
 
+    /**
+     * Looks for a device number <= 4 that we can use for the MetadataFinder.
+     *
+     * The MetadataFinder only works if it can use the ID of an unused "real" CDJ (1-4 - Rekordbox can use higher IDs)
+     * because it emulates a Pro-Link media browser. This means we either have to pick the ID of a CDJ that's not
+     * present. If you happen to have 4 real CDJs, it will automatically try to "borrow" an ID from one for a lookup -
+     * but that only works if there is one on the network that is not using Pro-Link right now. (If all 4 are using
+     * Pro-Link then sorry - you're out of luck!)
+     *
+     * @return byte a safe device number
+     */
     private byte getFreeLowDeviceNumber() {
         boolean[] taken = {false, false, false, false, false};
         for (DeviceAnnouncement a : DeviceFinder.getInstance().getCurrentDevices()) {
@@ -207,7 +219,9 @@ public class Application implements LifecycleListener
                 taken[deviceNumber] = true;
             }
         }
-        for(byte t = 1; t <= 4; t++) {
+
+        // try for 4 first.
+        for(byte t = 4; t > 0; t--) {
             if(!taken[t]) {
                 return t;
             }
