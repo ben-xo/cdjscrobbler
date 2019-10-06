@@ -59,6 +59,7 @@ public class Application implements LifecycleListener
     static final Logger logger = LoggerFactory.getLogger(Application.class);
     static final ApplicationConfig config = new ApplicationConfig();
     static final Application theApplication = new Application();
+    static final CsvLogger csvLogger = new CsvLogger();
 
     static int retryDelay = 500; // override with setting cdjscrobbler.retryDelayMs
 
@@ -85,7 +86,7 @@ public class Application implements LifecycleListener
         retryDelay = delay;
     }
 
-    public static LastFmClient getLfmClient(boolean enabled) throws IOException {
+    public static LastFmClient getLfmClient(final boolean enabled) throws IOException {
         LastFmClient lfm = null;
         if(enabled) {
             logger.info("Starting Last.fm Scrobbler…");
@@ -103,7 +104,7 @@ public class Application implements LifecycleListener
         return lfm;
     }
 
-    public static TwitterClient getTwitterClient(boolean enabled) throws IOException {
+    public static TwitterClient getTwitterClient(final boolean enabled) throws IOException {
         TwitterClient twitter = null;
         if(enabled) {
             logger.info("Starting Twitter bot…");
@@ -123,9 +124,9 @@ public class Application implements LifecycleListener
 
     public void start() throws Exception
     {
-        LastFmClient lfm = getLfmClient(lfmEnabled);
-        TwitterClient twitter = getTwitterClient(twitterEnabled);
-        DmcaAccountant dmcaAccountant = new DmcaAccountant();
+        final LastFmClient lfm = getLfmClient(lfmEnabled);
+        final TwitterClient twitter = getTwitterClient(twitterEnabled);
+        final DmcaAccountant dmcaAccountant = new DmcaAccountant();
 
         songEventQueue = new LinkedBlockingQueue<>();
 
@@ -139,6 +140,8 @@ public class Application implements LifecycleListener
 
         logger.info( "Starting QueueProcessor…" );
         queueProcessor = new QueueProcessor(songEventQueue);
+
+        queueProcessor.addScrobbleListener(csvLogger);
 
         queueProcessor.addNewSongLoadedListener(dmcaAccountant);
         queueProcessor.addNowPlayingListener(dmcaAccountant);
