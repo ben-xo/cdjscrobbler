@@ -29,10 +29,7 @@ package am.xo.cdjscrobbler;
 
 import com.github.scribejava.core.exceptions.OAuthException;
 import de.umass.lastfm.CallException;
-import org.deepsymmetry.beatlink.DeviceFinder;
-import org.deepsymmetry.beatlink.LifecycleListener;
-import org.deepsymmetry.beatlink.LifecycleParticipant;
-import org.deepsymmetry.beatlink.VirtualCdj;
+import org.deepsymmetry.beatlink.*;
 import org.deepsymmetry.beatlink.data.MetadataFinder;
 import org.deepsymmetry.beatlink.dbserver.ConnectionManager;
 import org.slf4j.Logger;
@@ -173,8 +170,15 @@ public class Application implements LifecycleListener
         } while(!started);
 
         // MediaFinder fails if there's only 1 CDJ on the network, because it can't impersonate an active device.
-        if(virtualCdj.getDeviceNumber() > 4 && DeviceFinder.getInstance().getCurrentDevices().size() == 1) {
-            virtualCdj.setDeviceNumber((byte) 4);
+        // It also fails if there are two on the network and they're both using Pro Link at the same time.
+        if(virtualCdj.getDeviceNumber() > 4) {
+            try {
+                byte newDeviceNumber = getFreeLowDeviceNumber();
+                virtualCdj.setDeviceNumber(newDeviceNumber);
+                logger.info("Set virtual CDJ device number to {}", newDeviceNumber);
+            } catch(IllegalStateException e) {
+                logger.error("Looks like metadata finder isn't going to work: no free low device numbers.");
+            }
         }
 
         logger.info("Starting MetadataFinder…");
@@ -193,6 +197,22 @@ public class Application implements LifecycleListener
             }
         } while(!started);
 
+    }
+
+    private byte getFreeLowDeviceNumber() {
+        boolean[] taken = {false, false, false, false, false};
+        for (DeviceAnnouncement a : DeviceFinder.getInstance().getCurrentDevices()) {
+            int deviceNumber = a.getNumber();
+            if(deviceNumber <= 4) {
+                taken[deviceNumber] = true;
+            }
+        }
+        for(byte t = 1; t <= 4; t++) {
+            if(!taken[t]) {
+                return t;
+            }
+        }
+        throw new IllegalStateException("No free low device numbers");
     }
 
     private static void loadConfig(String[] args) throws IOException {
