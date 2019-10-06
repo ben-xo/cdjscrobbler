@@ -245,6 +245,8 @@ public class Application implements LifecycleListener
     private static void loadConfig(String[] args) throws IOException {
 
         // TODO: make fewer assumptions here, but this'll do for now!
+        // We could reasonably have multiple instances of LastFmClient or TwitterClient, but there is currently
+        // no way to configure multiple instances without doing it in code.
 
         // load any config specified on the command line.
         if (args.length > 0) {
