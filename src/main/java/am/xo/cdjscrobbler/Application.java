@@ -35,11 +35,15 @@ import org.deepsymmetry.beatlink.data.MetadataFinder;
 import org.deepsymmetry.beatlink.dbserver.ConnectionManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import picocli.CommandLine;
+import picocli.CommandLine.Option;
 
 import java.io.File;
 import java.io.IOException;
 import java.net.UnknownHostException;
 import java.util.concurrent.LinkedBlockingQueue;
+
+import static picocli.CommandLine.Command;
 
 /**
  * This is where it all starts.
@@ -54,8 +58,21 @@ import java.util.concurrent.LinkedBlockingQueue;
  * During set up, if configuration is missing for either Last.fm or Twitter, you will be prompted to authenticate.
  *
  */
-public class Application implements LifecycleListener
-{
+@Command(versionProvider = Application.VersionProvider.class,
+        header = {
+            "@|fg(124)  .--. .---.    .-.   .--.                  .-.   .-.   .-.              |@",
+            "@|fg(125) : .--': .  :   : :  : .--'                 : :   : :   : :              |@",
+            "@|fg(126) : :   : :: : _ : :  `. `.  .--. .--.  .--. : `-. : `-. : :   .--. .--.  |@",
+            "@|fg(127) : :__ : :; :: :; :   _`, :'  ..': ..'' .; :' .; :' .; :: :_ ' '_.': ..' |@",
+            "@|fg(128) `.__.':___.'`.__.'  `.__.'`.__.':_;  `.__.'`.__.'`.__.'`.__;`.__.':_;   |@",
+            ""},
+        usageHelpWidth = 120,
+        usageHelpAutoWidth = true,
+        name = "cdjscrobbler",
+        description = "Scrobbles tracks from Pioneer CDJ-2000 pro-link network.%n",
+        mixinStandardHelpOptions = true
+)
+public class Application implements LifecycleListener, Runnable {
     static final Logger logger = LoggerFactory.getLogger(Application.class);
     static final ApplicationConfig config = new ApplicationConfig();
     static final Application theApplication = new Application();
@@ -63,7 +80,10 @@ public class Application implements LifecycleListener
 
     static int retryDelay = 500; // override with setting cdjscrobbler.retryDelayMs
 
+    @Option(names = {"-L", "--lfm-enabled"}, description = "Enable Last.fm scrobbling")
     static boolean lfmEnabled;
+
+    @Option(names = {"-T", "--twitter-enabled"}, description = "Enable tweeting the tracklist")
     static boolean twitterEnabled;
 
     static String localConfigFile = System.getProperty("user.home") + File.separator + "cdjscrobbler.properties";
@@ -72,14 +92,13 @@ public class Application implements LifecycleListener
     protected UpdateListener updateListener;
     protected QueueProcessor queueProcessor;
 
-    public static void main( String[] args ) throws Exception
-    {
-        loadConfig(args);
+    public static void main(String[] args) throws Exception {
+        loadStaticConfig();
 
-        logger.info( "💿📀💿📀 CDJ Scrobbler v{} by Ben XO", config.getProperty("cdjscrobbler.version"));
-        logger.info( "💿📀💿📀 https://github.com/ben-xo/cdjscrobbler");
+        logger.info("💿📀💿📀 CDJ Scrobbler v{} by Ben XO", config.getProperty("cdjscrobbler.version"));
+        logger.info("💿📀💿📀 https://github.com/ben-xo/cdjscrobbler");
 
-        theApplication.start();
+        new CommandLine(theApplication).execute(args);
     }
 
     public static void setRetryDelay(int delay) {
@@ -88,13 +107,13 @@ public class Application implements LifecycleListener
 
     public static LastFmClient getLfmClient(final boolean enabled) throws IOException {
         LastFmClient lfm = null;
-        if(enabled) {
+        if (enabled) {
             logger.info("Starting Last.fm Scrobbler…");
             lfm = new LastFmClient(new LastFmClientConfig(config));
             try {
                 lfm.ensureUserIsConnected();
             } catch (CallException e) {
-                if(e.getCause() instanceof UnknownHostException) {
+                if (e.getCause() instanceof UnknownHostException) {
                     logger.warn("** Looks like we're offline. Scrobbling disabled. **");
                 } else {
                     throw e;
@@ -106,13 +125,13 @@ public class Application implements LifecycleListener
 
     public static TwitterClient getTwitterClient(final boolean enabled) throws IOException {
         TwitterClient twitter = null;
-        if(enabled) {
+        if (enabled) {
             logger.info("Starting Twitter bot…");
             twitter = new TwitterClient(new TwitterClientConfig(config));
             try {
                 twitter.ensureUserIsConnected();
             } catch (OAuthException e) {
-                if(e.getCause() instanceof UnknownHostException) {
+                if (e.getCause() instanceof UnknownHostException) {
                     logger.warn("** Looks like we're offline. Tweeting disabled. **");
                 } else {
                     throw e;
@@ -122,42 +141,53 @@ public class Application implements LifecycleListener
         return twitter;
     }
 
-    public void start() throws Exception
-    {
-        final LastFmClient lfm = getLfmClient(lfmEnabled);
-        final TwitterClient twitter = getTwitterClient(twitterEnabled);
-        final DmcaAccountant dmcaAccountant = new DmcaAccountant();
+    @Override
+    public void run() {
+        try {
+            loadExternalConfig();
 
-        songEventQueue = new LinkedBlockingQueue<>();
+            final LastFmClient lfm = getLfmClient(lfmEnabled);
+            final TwitterClient twitter = getTwitterClient(twitterEnabled);
+            final DmcaAccountant dmcaAccountant = new DmcaAccountant();
+//            final ArtworkPopup artworkPopup = new ArtworkPopup();
 
-        // start two threads with a shared queue
-        // TODO: dynamically add and remove UpdateListeners as devices are announced
-        logger.info( "Starting UpdateListener…" );
-        updateListener = new UpdateListener(songEventQueue);
-        VirtualCdj.getInstance().addUpdateListener(updateListener);
+            songEventQueue = new LinkedBlockingQueue<>();
 
-        startVirtualCdj();
+            // start two threads with a shared queue
+            // TODO: dynamically add and remove UpdateListeners as devices are announced
+            logger.info("Starting UpdateListener…");
+            updateListener = new UpdateListener(songEventQueue);
+            VirtualCdj.getInstance().addUpdateListener(updateListener);
 
-        logger.info( "Starting QueueProcessor…" );
-        queueProcessor = new QueueProcessor(songEventQueue);
+            startVirtualCdj();
 
-        queueProcessor.addScrobbleListener(csvLogger);
+            logger.info("Starting QueueProcessor…");
+            queueProcessor = new QueueProcessor(songEventQueue);
 
-        queueProcessor.addNewSongLoadedListener(dmcaAccountant);
-        queueProcessor.addNowPlayingListener(dmcaAccountant);
+//            queueProcessor.addNowPlayingListener(artworkPopup);
 
-        if(lfmEnabled)     {
-            queueProcessor.addNowPlayingListener(lfm);
-            queueProcessor.addScrobbleListener(lfm);
+            queueProcessor.addScrobbleListener(csvLogger);
+
+            queueProcessor.addNewSongLoadedListener(dmcaAccountant);
+            queueProcessor.addNowPlayingListener(dmcaAccountant);
+
+            if (lfmEnabled) {
+                queueProcessor.addNowPlayingListener(lfm);
+                queueProcessor.addScrobbleListener(lfm);
+            }
+
+            if (twitterEnabled) {
+                queueProcessor.addNowPlayingListener(twitter);
+            }
+
+            queueProcessor.start(); // this doesn't return until shutdown (or exception)
+
+            // TODO: queue processor should probably have its own thread.
+
+        } catch(Exception e) {
+            e.printStackTrace();
+            System.exit(-1);
         }
-
-        if(twitterEnabled) {
-            queueProcessor.addNowPlayingListener(twitter);
-        }
-
-        queueProcessor.start(); // this doesn't return until shutdown (or exception)
-
-        // TODO: queue processor should probably have its own thread.
     }
 
     private void startVirtualCdj() throws InterruptedException {
@@ -177,23 +207,23 @@ public class Application implements LifecycleListener
         do {
             try {
                 started = virtualCdj.start();
-            } catch(Exception e) {
+            } catch (Exception e) {
                 logger.warn("Failed to start.", e);
             }
-            if(!started) {
+            if (!started) {
                 logger.info("Retrying VirtualCdj…");
                 Thread.sleep(retryDelay);
             }
-        } while(!started);
+        } while (!started);
 
         // MediaFinder fails if there's only 1 CDJ on the network, because it can't impersonate an active device.
         // It also fails if there are two on the network and they're both using Pro Link at the same time.
-        if(virtualCdj.getDeviceNumber() > 4) {
+        if (virtualCdj.getDeviceNumber() > 4) {
             try {
                 byte newDeviceNumber = getFreeLowDeviceNumber();
                 virtualCdj.setDeviceNumber(newDeviceNumber);
                 logger.info("Set virtual CDJ device number to {}", newDeviceNumber);
-            } catch(IllegalStateException e) {
+            } catch (IllegalStateException e) {
                 logger.error("Looks like metadata finder isn't going to work: no free low device numbers.");
             }
         }
@@ -205,20 +235,20 @@ public class Application implements LifecycleListener
             try {
                 metadataFinder.start();
                 started = metadataFinder.isRunning();
-            } catch(Exception e) {
+            } catch (Exception e) {
                 logger.warn("Failed to start.", e);
             }
-            if(!started) {
+            if (!started) {
                 logger.info("Retrying MetadataFinder…");
                 Thread.sleep(retryDelay);
             }
-        } while(!started);
+        } while (!started);
 
     }
 
     /**
      * Looks for a device number <= 4 that we can use for the MetadataFinder.
-     *
+     * <p>
      * The MetadataFinder only works if it can use the ID of an unused "real" CDJ (1-4 - Rekordbox can use higher IDs)
      * because it emulates a Pro-Link media browser. This means we either have to pick the ID of a CDJ that's not
      * present. If you happen to have 4 real CDJs, it will automatically try to "borrow" an ID from one for a lookup -
@@ -231,39 +261,35 @@ public class Application implements LifecycleListener
         boolean[] taken = {false, false, false, false, false};
         for (DeviceAnnouncement a : DeviceFinder.getInstance().getCurrentDevices()) {
             int deviceNumber = a.getNumber();
-            if(deviceNumber <= 4) {
+            if (deviceNumber <= 4) {
                 taken[deviceNumber] = true;
             }
         }
 
         // try for 4 first.
-        for(byte t = 4; t > 0; t--) {
-            if(!taken[t]) {
+        for (byte t = 4; t > 0; t--) {
+            if (!taken[t]) {
                 return t;
             }
         }
         throw new IllegalStateException("No free low device numbers");
     }
 
-    private static void loadConfig(String[] args) throws IOException {
+    private static void loadStaticConfig() throws IOException {
+        // load default (internal) config
+        config.load(Application.class.getClassLoader().getResourceAsStream("config.properties"));
+    }
+
+    private static void loadExternalConfig() throws IOException {
 
         // TODO: make fewer assumptions here, but this'll do for now!
         // We could reasonably have multiple instances of LastFmClient or TwitterClient, but there is currently
         // no way to configure multiple instances without doing it in code.
 
-        // load any config specified on the command line.
-        if (args.length > 0) {
-            localConfigFile = args[0];
-            logger.info("Config file set to " + localConfigFile);
-        }
-
-        // load default (internal) config
-        config.load(Application.class.getClassLoader().getResourceAsStream("config.properties"));
-
         try {
             // load e.g. Last.fm and Twitter keys and tokens
             logger.info("Loading local client configuration");
-            config.load();
+            config.load(); // from Application.localConfigFile
         } catch (IOException ioe) {
             logger.error("Error loading config properties from {}", localConfigFile, ioe);
             throw ioe;
@@ -274,17 +300,17 @@ public class Application implements LifecycleListener
         String lfmEnabled = config.getProperty("cdjscrobbler.enable.lastfm", "false");
         String twitterEnabled = config.getProperty("cdjscrobbler.enable.twitter", "false");
 
-        if(nowPlayingPoint != null && !nowPlayingPoint.isEmpty()) {
+        if (nowPlayingPoint != null && !nowPlayingPoint.isEmpty()) {
             logger.info("Loaded Now Playing Point of {} ms", nowPlayingPoint);
             SongModel.setNowPlayingPoint(Integer.parseInt(nowPlayingPoint));
         }
 
-        if(retryDelay != null && !retryDelay.isEmpty()) {
+        if (retryDelay != null && !retryDelay.isEmpty()) {
             logger.info("Loaded Retry Delay of {} ms", retryDelay);
             setRetryDelay(Integer.parseInt(nowPlayingPoint));
         }
 
-        if(Boolean.parseBoolean(lfmEnabled)) {
+        if (Boolean.parseBoolean(lfmEnabled)) {
             Application.lfmEnabled = true;
         } else {
             logger.warn("**************************************************************************************");
@@ -292,7 +318,7 @@ public class Application implements LifecycleListener
             logger.warn("**************************************************************************************");
         }
 
-        if(Boolean.parseBoolean(twitterEnabled)) {
+        if (Boolean.parseBoolean(twitterEnabled)) {
             Application.twitterEnabled = true;
         } else {
             logger.warn("*********************************************************************************");
@@ -311,9 +337,18 @@ public class Application implements LifecycleListener
         logger.info("Attempting to restart because {} stopped", sender);
         try {
             startVirtualCdj();
-        } catch(InterruptedException e) {
+        } catch (InterruptedException e) {
             // looks like the app was shutting down. Accept fate.
         }
     }
 
+    static class VersionProvider implements CommandLine.IVersionProvider {
+
+        @Override
+        public String[] getVersion() throws Exception {
+            String[] v = new String[1];
+            v[0] = config.getProperty("cdjscrobbler.version");
+            return v;
+        }
+    }
 }
