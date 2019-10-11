@@ -151,5 +151,10 @@
       <artifactId>commons-csv</artifactId>
       <version>1.4</version>
     </dependency>
+    <dependency>
+      <groupId>info.picocli</groupId>
+      <artifactId>picocli</artifactId>
+      <version>4.0.4</version>
+    </dependency>
   </dependencies>
 </project>
