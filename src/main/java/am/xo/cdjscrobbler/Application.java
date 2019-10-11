@@ -35,6 +35,7 @@ import org.deepsymmetry.beatlink.data.MetadataFinder;
 import org.deepsymmetry.beatlink.dbserver.ConnectionManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.slf4j.bridge.SLF4JBridgeHandler;
 import picocli.CommandLine;
 import picocli.CommandLine.Option;
 
@@ -42,6 +43,7 @@ import java.io.File;
 import java.io.IOException;
 import java.net.UnknownHostException;
 import java.util.concurrent.LinkedBlockingQueue;
+import java.util.logging.Level;
 
 import static picocli.CommandLine.Command;
 
@@ -89,6 +91,11 @@ public class Application implements LifecycleListener, Runnable {
     static String localConfigFile = System.getProperty("user.home") + File.separator + "cdjscrobbler.properties";
 
     public static void main(String[] args) throws Exception {
+
+        SLF4JBridgeHandler.removeHandlersForRootLogger();
+        SLF4JBridgeHandler.install();
+        java.util.logging.Logger.getLogger("").setLevel(Level.FINEST);
+
         loadStaticConfig();
         new CommandLine(theApplication).execute(args);
     }
