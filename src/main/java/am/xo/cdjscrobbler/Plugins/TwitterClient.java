@@ -27,6 +27,7 @@
 
 package am.xo.cdjscrobbler.Plugins;
 
+import am.xo.cdjscrobbler.Plugin;
 import am.xo.cdjscrobbler.SongDetails;
 import am.xo.cdjscrobbler.SongEventListeners.NowPlayingListener;
 import am.xo.cdjscrobbler.SongEvents.NowPlayingEvent;
@@ -52,7 +53,7 @@ import java.util.concurrent.ExecutionException;
  * Call ensureUserIsConnected() to make sure we have a valid session, then sendNowPlaying to take action!
  *
  */
-public class TwitterClient implements NowPlayingListener {
+public class TwitterClient implements Plugin, NowPlayingListener {
 
     private static final String PROTECTED_RESOURCE_URL = "https://api.twitter.com/1.1/account/verify_credentials.json";
 
@@ -61,6 +62,10 @@ public class TwitterClient implements NowPlayingListener {
     private TwitterClientConfig config;
     private OAuth1AccessToken accessToken;
     private boolean debug = false;
+
+    public TwitterClient() {
+
+    }
 
     public TwitterClient(TwitterClientConfig config) {
         this.config = config;

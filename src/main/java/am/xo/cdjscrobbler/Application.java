@@ -80,8 +80,8 @@ public class Application implements LifecycleListener, Runnable {
 
     static int retryDelay = 500; // override with setting cdjscrobbler.retryDelayMs
 
-    @Option(names = {"-L", "--lfm-enabled"}, description = "Enable Last.fm scrobbling")
-    static boolean lfmEnabled;
+//    @Option(names = {"-L", "--lfm-enabled"}, description = "Enable Last.fm scrobbling")
+//    static boolean lfmEnabled;
 
     @Option(names = {"-T", "--twitter-enabled"}, description = "Enable tweeting the tracklist")
     static boolean twitterEnabled;
@@ -90,7 +90,11 @@ public class Application implements LifecycleListener, Runnable {
 
     public static void main(String[] args) throws Exception {
         loadStaticConfig();
-        new CommandLine(theApplication).execute(args);
+        CommandLine commandLine = new CommandLine(theApplication);
+        for(Plugin p: PluginEnumerator.getAllPlugins()) {
+            commandLine.addMixin(p.getClass().toString(), p);
+        }
+        commandLine.execute(args);
     }
 
     public static void setRetryDelay(int delay) {
@@ -146,7 +150,7 @@ public class Application implements LifecycleListener, Runnable {
         try {
             loadExternalConfig();
 
-            final LastFmClient lfm = getLfmClient(lfmEnabled);
+            final LastFmClient lfm = getLfmClient(LastFmClient.isEnabled());
             final TwitterClient twitter = getTwitterClient(twitterEnabled);
             final DmcaAccountant dmcaAccountant = new DmcaAccountant();
 //            final ArtworkPopup artworkPopup = new ArtworkPopup();
@@ -171,7 +175,7 @@ public class Application implements LifecycleListener, Runnable {
             queueProcessor.addNewSongLoadedListener(dmcaAccountant);
             queueProcessor.addNowPlayingListener(dmcaAccountant);
 
-            if (lfmEnabled) {
+            if (LastFmClient.isEnabled()) {
                 queueProcessor.addNowPlayingListener(lfm);
                 queueProcessor.addScrobbleListener(lfm);
             }
@@ -311,7 +315,7 @@ public class Application implements LifecycleListener, Runnable {
         }
 
         if (Boolean.parseBoolean(lfmEnabled)) {
-            Application.lfmEnabled = true;
+//            Application.lfmEnabled = true;
         } else {
             logger.warn("**************************************************************************************");
             logger.warn("* Scrobbling to Last.fm disabled. set cdjscrobbler.enable.lastfm=true in your config *");

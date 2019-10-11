@@ -28,6 +28,7 @@
 package am.xo.cdjscrobbler.Plugins;
 
 import am.xo.cdjscrobbler.Application;
+import am.xo.cdjscrobbler.Plugin;
 import am.xo.cdjscrobbler.SongDetails;
 import am.xo.cdjscrobbler.SongEventListeners.NewSongLoadedListener;
 import am.xo.cdjscrobbler.SongEventListeners.NowPlayingListener;
@@ -43,7 +44,7 @@ import java.util.ArrayList;
  * would prevent your show being aired unrestricted on Mixcloud or other services which follow the "No more than 4 songs
  * by the same artist" DMCA rule
  */
-public class DmcaAccountant implements NowPlayingListener, NewSongLoadedListener {
+public class DmcaAccountant implements Plugin, NowPlayingListener, NewSongLoadedListener {
     static final Logger logger = LoggerFactory.getLogger(Application.class);
 
     ArrayList<SongDetails> played = new ArrayList<>();

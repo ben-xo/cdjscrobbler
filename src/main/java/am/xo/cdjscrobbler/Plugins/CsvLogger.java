@@ -27,6 +27,7 @@
 
 package am.xo.cdjscrobbler.Plugins;
 
+import am.xo.cdjscrobbler.Plugin;
 import am.xo.cdjscrobbler.SongDetails;
 import am.xo.cdjscrobbler.SongEventListeners.ScrobbleListener;
 import am.xo.cdjscrobbler.SongEvents.ScrobbleEvent;
@@ -43,7 +44,7 @@ import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 
-public class CsvLogger implements ScrobbleListener {
+public class CsvLogger implements ScrobbleListener, Plugin {
 
     static final Logger logger = LoggerFactory.getLogger(CsvLogger.class);
     static final String FILENAME = "tracklist.csv";

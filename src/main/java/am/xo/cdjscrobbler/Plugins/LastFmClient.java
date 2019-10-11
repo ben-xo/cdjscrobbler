@@ -27,6 +27,7 @@
 
 package am.xo.cdjscrobbler.Plugins;
 
+import am.xo.cdjscrobbler.Plugin;
 import am.xo.cdjscrobbler.SongDetails;
 import am.xo.cdjscrobbler.SongEventListeners.NowPlayingListener;
 import am.xo.cdjscrobbler.SongEventListeners.ScrobbleListener;
@@ -41,6 +42,9 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 
+import static picocli.CommandLine.Command;
+import static picocli.CommandLine.Option;
+
 /**
  * Component that is responsible for authenticating to Last.fm, and then scrobbling (as well as issuing
  * Now Playing updates).
@@ -50,12 +54,24 @@ import java.io.IOException;
  *
  * Scrobbling has various rules about when it should be done - see https://www.last.fm/api/scrobbling
  */
-public class LastFmClient implements NowPlayingListener, ScrobbleListener {
+@Command
+public class LastFmClient implements Plugin, NowPlayingListener, ScrobbleListener {
 
     static final Logger logger = LoggerFactory.getLogger(LastFmClient.class);
 
     private Session theSession;
     private LastFmClientConfig config;
+
+    @Option(names = {"-L", "--lfm-enabled"}, description = "Enable Last.fm scrobbling")
+    static boolean lfmEnabled;
+
+    public LastFmClient() {
+
+    }
+
+    public static boolean isEnabled() {
+        return lfmEnabled;
+    }
 
     public LastFmClient(LastFmClientConfig config) {
         this.config = config;
