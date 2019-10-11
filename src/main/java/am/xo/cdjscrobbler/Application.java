@@ -88,16 +88,8 @@ public class Application implements LifecycleListener, Runnable {
 
     static String localConfigFile = System.getProperty("user.home") + File.separator + "cdjscrobbler.properties";
 
-    protected LinkedBlockingQueue<SongEvent> songEventQueue;
-    protected UpdateListener updateListener;
-    protected QueueProcessor queueProcessor;
-
     public static void main(String[] args) throws Exception {
         loadStaticConfig();
-
-        logger.info("💿📀💿📀 CDJ Scrobbler v{} by Ben XO", config.getProperty("cdjscrobbler.version"));
-        logger.info("💿📀💿📀 https://github.com/ben-xo/cdjscrobbler");
-
         new CommandLine(theApplication).execute(args);
     }
 
@@ -141,8 +133,16 @@ public class Application implements LifecycleListener, Runnable {
         return twitter;
     }
 
+    protected LinkedBlockingQueue<SongEvent> songEventQueue;
+    protected UpdateListener updateListener;
+    protected QueueProcessor queueProcessor;
+
     @Override
     public void run() {
+
+        logger.info("💿📀💿📀 CDJ Scrobbler v{} by Ben XO", config.getProperty("cdjscrobbler.version"));
+        logger.info("💿📀💿📀 https://github.com/ben-xo/cdjscrobbler");
+
         try {
             loadExternalConfig();
 
