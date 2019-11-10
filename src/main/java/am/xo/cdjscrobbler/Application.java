@@ -31,6 +31,7 @@ import am.xo.cdjscrobbler.Plugins.*;
 import com.github.scribejava.core.exceptions.OAuthException;
 import de.umass.lastfm.CallException;
 import org.deepsymmetry.beatlink.*;
+import org.deepsymmetry.beatlink.data.CrateDigger;
 import org.deepsymmetry.beatlink.data.MetadataFinder;
 import org.deepsymmetry.beatlink.dbserver.ConnectionManager;
 import org.slf4j.Logger;
@@ -74,13 +75,15 @@ import static picocli.CommandLine.Command;
         description = "Scrobbles tracks from Pioneer CDJ-2000 pro-link network.%n",
         mixinStandardHelpOptions = true
 )
-public class Application implements LifecycleListener, Runnable {
+public class Application implements LifecycleListener, Runnable, DeviceAnnouncementListener {
     static final Logger logger = LoggerFactory.getLogger(Application.class);
     static final ApplicationConfig config = new ApplicationConfig();
     static final Application theApplication = new Application();
     static final CsvLogger csvLogger = new CsvLogger();
 
     static int retryDelay = 500; // override with setting cdjscrobbler.retryDelayMs
+
+    static byte oldDeviceNumber; // used for VirtualCdj / MetadataFinder compat with only 1 CDJ
 
     @Option(names = {"-L", "--lfm-enabled"}, description = "Enable Last.fm scrobbling")
     static boolean lfmEnabled;
@@ -156,7 +159,6 @@ public class Application implements LifecycleListener, Runnable {
             final LastFmClient lfm = getLfmClient(lfmEnabled);
             final TwitterClient twitter = getTwitterClient(twitterEnabled);
             final DmcaAccountant dmcaAccountant = new DmcaAccountant();
-//            final ArtworkPopup artworkPopup = new ArtworkPopup();
 
             songEventQueue = new LinkedBlockingQueue<>();
 
@@ -168,10 +170,13 @@ public class Application implements LifecycleListener, Runnable {
 
             startVirtualCdj();
 
+            // this must happen after startVirtualCdj() because ArtFinder starts MetadataFinder
+           //final ArtworkPopup artworkPopup = new ArtworkPopup();
+
             logger.info("Starting QueueProcessor…");
             queueProcessor = new QueueProcessor(songEventQueue);
 
-//            queueProcessor.addNowPlayingListener(artworkPopup);
+            //queueProcessor.addNowPlayingListener(artworkPopup);
 
             queueProcessor.addScrobbleListener(csvLogger);
 
@@ -199,8 +204,10 @@ public class Application implements LifecycleListener, Runnable {
 
     private void startVirtualCdj() throws InterruptedException {
         ConnectionManager connectionManager = ConnectionManager.getInstance();
+        DeviceFinder deviceFinder = DeviceFinder.getInstance();
         VirtualCdj virtualCdj = VirtualCdj.getInstance();
         MetadataFinder metadataFinder = MetadataFinder.getInstance();
+        CrateDigger crateDigger = CrateDigger.getInstance();
 
         // default is 10s, which is quite high when recovering from a network outage
         connectionManager.setSocketTimeout(3000);
@@ -214,6 +221,7 @@ public class Application implements LifecycleListener, Runnable {
         do {
             try {
                 started = virtualCdj.start();
+                oldDeviceNumber = virtualCdj.getDeviceNumber();
             } catch (Exception e) {
                 logger.warn("Failed to start.", e);
             }
@@ -223,17 +231,9 @@ public class Application implements LifecycleListener, Runnable {
             }
         } while (!started);
 
-        // MediaFinder fails if there's only 1 CDJ on the network, because it can't impersonate an active device.
-        // It also fails if there are two on the network and they're both using Pro Link at the same time.
-        if (virtualCdj.getDeviceNumber() > 4) {
-            try {
-                byte newDeviceNumber = getFreeLowDeviceNumber();
-                virtualCdj.setDeviceNumber(newDeviceNumber);
-                logger.info("Set virtual CDJ device number to {}", newDeviceNumber);
-            } catch (IllegalStateException e) {
-                logger.error("Looks like metadata finder isn't going to work: no free low device numbers.");
-            }
-        }
+        // compat with 1 CDJ mode for MetadataFinder. Depends on oldDeviceNumber.
+        updateVirtualCdjNumber();
+        deviceFinder.addDeviceAnnouncementListener(this);
 
         logger.info("Starting MetadataFinder…");
 
@@ -251,6 +251,14 @@ public class Application implements LifecycleListener, Runnable {
             }
         } while (!started);
 
+        do {
+            try {
+                crateDigger.start();
+            } catch(Exception e) {
+                logger.error("CrateDigger error (retrying):", e);
+                Thread.sleep(retryDelay);
+            }
+        } while(!crateDigger.isRunning());
     }
 
     /**
@@ -346,6 +354,34 @@ public class Application implements LifecycleListener, Runnable {
             startVirtualCdj();
         } catch (InterruptedException e) {
             // looks like the app was shutting down. Accept fate.
+        }
+    }
+
+    @Override
+    public void deviceFound(DeviceAnnouncement deviceAnnouncement) {
+        updateVirtualCdjNumber();
+    }
+
+    @Override
+    public void deviceLost(DeviceAnnouncement deviceAnnouncement) {
+        updateVirtualCdjNumber();
+    }
+
+    /**
+     * MediaFinder throws a bunch of ugly exceptions if you don't try to give it a virtual CDJ number when there's
+     * only 1 virtual CDJ on the network.
+     */
+    void updateVirtualCdjNumber() {
+        if(DeviceFinder.getInstance().getCurrentDevices().size() == 1) {
+            try {
+                byte newDeviceNumber = getFreeLowDeviceNumber();
+                VirtualCdj.getInstance().setDeviceNumber(newDeviceNumber);
+                logger.info("Set virtual CDJ device number to {}", newDeviceNumber);
+            } catch (IllegalStateException e) {
+                logger.error("only 1 device no free devices?");
+            }
+        } else {
+            VirtualCdj.getInstance().setDeviceNumber(oldDeviceNumber);
         }
     }
 
