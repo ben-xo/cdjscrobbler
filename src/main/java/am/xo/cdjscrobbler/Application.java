@@ -170,13 +170,13 @@ public class Application implements LifecycleListener, Runnable, DeviceAnnouncem
 
             startVirtualCdj();
 
-            // this must happen after startVirtualCdj() because ArtFinder starts MetadataFinder
-           //final ArtworkPopup artworkPopup = new ArtworkPopup();
 
             logger.info("Starting QueueProcessor…");
             queueProcessor = new QueueProcessor(songEventQueue);
 
-            //queueProcessor.addNowPlayingListener(artworkPopup);
+            // this must happen after startVirtualCdj() because ArtFinder starts MetadataFinder
+//            final ArtworkPopup artworkPopup = new ArtworkPopup();
+//            queueProcessor.addNowPlayingListener(artworkPopup);
 
             queueProcessor.addScrobbleListener(csvLogger);
 
