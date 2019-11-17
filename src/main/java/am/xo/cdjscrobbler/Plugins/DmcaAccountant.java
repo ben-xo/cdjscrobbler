@@ -58,7 +58,7 @@ public class DmcaAccountant implements NowPlayingListener, NewSongLoadedListener
         if(!checkIsSafeToPlay(event.model.getSong())) {
             warning.setWarn(event.cdjStatus.getDeviceNumber());
         } else {
-            warning.removeWarn();
+            warning.removeWarn(event.cdjStatus.getDeviceNumber());
         }
     }
 

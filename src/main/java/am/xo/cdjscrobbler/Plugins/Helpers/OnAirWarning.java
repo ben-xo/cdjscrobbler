@@ -31,42 +31,48 @@ import org.deepsymmetry.beatlink.VirtualCdj;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.Collections;
 import java.util.HashSet;
+import java.util.Set;
 
 public class OnAirWarning extends Thread {
     static final Logger logger = LoggerFactory.getLogger(OnAirWarning.class);
 
-    Integer cdjToWarn = 0;
+    static final HashSet<Integer> playersToWarn = new HashSet<>();
+    static final Set<Integer> noPlayers = Collections.emptySet();
+    static boolean hasChanged = false;
 
     public void setWarn(int cdj) {
-        synchronized(cdjToWarn) {
-            cdjToWarn = cdj;
+        synchronized(playersToWarn) {
+            playersToWarn.add(cdj);
+            hasChanged = true;
         }
     }
 
-    public void removeWarn() {
-        synchronized(cdjToWarn) {
-            cdjToWarn = 0;
+    public void removeWarn(int cdj) {
+        synchronized(playersToWarn) {
+            playersToWarn.remove(cdj);
+            hasChanged = true;
         }
     }
 
     @Override
     public void run()
     {
-        final HashSet<Integer> players = new HashSet<>();
-        int cdj;
+        Set<Integer> playersToWarnCopy = Collections.EMPTY_SET;
         try {
             while (true) {
-                synchronized (cdjToWarn) {
-                    cdj = cdjToWarn;
+                synchronized (playersToWarn) {
+                    if(hasChanged) {
+                        playersToWarnCopy = new HashSet<>(playersToWarn);
+                    }
                 }
-                if(cdj > 0) {
-                    players.add(cdj);
-                    VirtualCdj.getInstance().sendOnAirCommand(players);
+                if (!playersToWarnCopy.isEmpty()) {
+                    VirtualCdj.getInstance().sendOnAirCommand(playersToWarnCopy);
                     Thread.sleep(250);
-                    players.remove(cdj);
-                    VirtualCdj.getInstance().sendOnAirCommand(players);
+                    VirtualCdj.getInstance().sendOnAirCommand(Collections.EMPTY_SET);
                 }
+                // don't accidentally put this inside the if() - 100% CPU awaits if you do
                 Thread.sleep(250);
             }
         } catch(Exception e) {
