@@ -27,7 +27,7 @@
 
 package am.xo.cdjscrobbler.Plugins;
 
-import am.xo.cdjscrobbler.Application;
+import am.xo.cdjscrobbler.Plugins.Helpers.OnAirWarning;
 import am.xo.cdjscrobbler.SongDetails;
 import am.xo.cdjscrobbler.SongEventListeners.NewSongLoadedListener;
 import am.xo.cdjscrobbler.SongEventListeners.NowPlayingListener;
@@ -44,13 +44,22 @@ import java.util.ArrayList;
  * by the same artist" DMCA rule
  */
 public class DmcaAccountant implements NowPlayingListener, NewSongLoadedListener {
-    static final Logger logger = LoggerFactory.getLogger(Application.class);
+    static final Logger logger = LoggerFactory.getLogger(DmcaAccountant.class);
 
     ArrayList<SongDetails> played = new ArrayList<>();
+    OnAirWarning warning = new OnAirWarning();
+
+    public void start() {
+        warning.start();
+    }
 
     @Override
     public void newSongLoaded(NewSongLoadedEvent event) {
-        checkIsSafeToPlay(event.model.getSong());
+        if(!checkIsSafeToPlay(event.model.getSong())) {
+            warning.setWarn(event.cdjStatus.getDeviceNumber());
+        } else {
+            warning.removeWarn();
+        }
     }
 
     @Override
@@ -67,10 +76,12 @@ public class DmcaAccountant implements NowPlayingListener, NewSongLoadedListener
         logger.info("Logged play for song {} - song #{}", song, played.size());
     }
 
-    public void checkIsSafeToPlay(SongDetails song) {
+    public boolean checkIsSafeToPlay(SongDetails song) {
         if(!isSafeToPlay(song)) {
             logger.warn("⚠️⚠️⚠️ Don't play this song!");
+            return false;
         }
+        return true;
     }
 
     public boolean isSafeToPlay(SongDetails song) {

@@ -159,6 +159,8 @@ public class CDJScrobbler implements LifecycleListener, Runnable, DeviceAnnounce
             final LastFmClient lfm = getLfmClient(lfmEnabled);
             final TwitterClient twitter = getTwitterClient(twitterEnabled);
             final DmcaAccountant dmcaAccountant = new DmcaAccountant();
+            // start the on air warning
+            dmcaAccountant.start();
 
             songEventQueue = new LinkedBlockingQueue<>();
 
