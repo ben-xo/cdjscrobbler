@@ -27,15 +27,15 @@
 
 package am.xo.cdjscrobbler.Plugins;
 
-import am.xo.cdjscrobbler.ApplicationConfig;
+import am.xo.cdjscrobbler.CDJScrobblerConfig;
 
 import java.io.IOException;
 
 public class TwitterClientConfig {
 
-    private ApplicationConfig config;
+    private CDJScrobblerConfig config;
 
-    public TwitterClientConfig(ApplicationConfig config) {
+    public TwitterClientConfig(CDJScrobblerConfig config) {
         this.config = config;
     }
 

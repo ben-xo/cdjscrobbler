@@ -27,15 +27,15 @@
 
 package am.xo.cdjscrobbler.Plugins;
 
-import am.xo.cdjscrobbler.ApplicationConfig;
+import am.xo.cdjscrobbler.CDJScrobblerConfig;
 
 import java.io.IOException;
 
 public class LastFmClientConfig {
 
-    private ApplicationConfig config;
+    private CDJScrobblerConfig config;
 
-    public LastFmClientConfig(ApplicationConfig config) {
+    public LastFmClientConfig(CDJScrobblerConfig config) {
         this.config = config;
     }
 

@@ -32,7 +32,7 @@ import java.io.IOException;
 /**
  * ComboConfig that knows about the CDJ Scrobbler application configuration.
  */
-public class ApplicationConfig extends ComboConfig {
+public class CDJScrobblerConfig extends ComboConfig {
     public void save() throws IOException {
         ConfigFileUtil.save(CDJScrobbler.config, CDJScrobbler.localConfigFile);
     }

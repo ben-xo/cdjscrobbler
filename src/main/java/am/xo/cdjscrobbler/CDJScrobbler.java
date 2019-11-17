@@ -51,7 +51,7 @@ import static picocli.CommandLine.Command;
 /**
  * This is where it all starts.
  *
- * The Application class is responsible for loading the configuration, creating Twitter and Last.fm clients, and
+ * The CDJScrobbler class is responsible for loading the configuration, creating Twitter and Last.fm clients, and
  * then hooking them up to the CDJ lifecycle through beat-link's VirtualCdj and MediaFinder.
  *
  * beat-link requires low latency (but delivers DeviceUpdates on the same thread), so the architecture is to
@@ -61,7 +61,7 @@ import static picocli.CommandLine.Command;
  * During set up, if configuration is missing for either Last.fm or Twitter, you will be prompted to authenticate.
  *
  */
-@Command(versionProvider = Application.VersionProvider.class,
+@Command(versionProvider = CDJScrobbler.VersionProvider.class,
         header = {
             "@|fg(124)  .--. .---.    .-.   .--.                  .-.   .-.   .-.              |@",
             "@|fg(125) : .--': .  :   : :  : .--'                 : :   : :   : :              |@",
@@ -75,10 +75,10 @@ import static picocli.CommandLine.Command;
         description = "Scrobbles tracks from Pioneer CDJ-2000 pro-link network.%n",
         mixinStandardHelpOptions = true
 )
-public class Application implements LifecycleListener, Runnable, DeviceAnnouncementListener {
-    static final Logger logger = LoggerFactory.getLogger(Application.class);
-    static final ApplicationConfig config = new ApplicationConfig();
-    static final Application theApplication = new Application();
+public class CDJScrobbler implements LifecycleListener, Runnable, DeviceAnnouncementListener {
+    static final Logger logger = LoggerFactory.getLogger(CDJScrobbler.class);
+    static final CDJScrobblerConfig config = new CDJScrobblerConfig();
+    static final CDJScrobbler theApplication = new CDJScrobbler();
     static final CsvLogger csvLogger = new CsvLogger();
 
     static int retryDelay = 500; // override with setting cdjscrobbler.retryDelayMs
@@ -292,7 +292,7 @@ public class Application implements LifecycleListener, Runnable, DeviceAnnouncem
 
     private static void loadStaticConfig() throws IOException {
         // load default (internal) config
-        config.load(Application.class.getClassLoader().getResourceAsStream("config.properties"));
+        config.load(CDJScrobbler.class.getClassLoader().getResourceAsStream("config.properties"));
     }
 
     private static void loadExternalConfig() throws IOException {
@@ -304,7 +304,7 @@ public class Application implements LifecycleListener, Runnable, DeviceAnnouncem
         try {
             // load e.g. Last.fm and Twitter keys and tokens
             logger.info("Loading local client configuration");
-            config.load(); // from Application.localConfigFile
+            config.load(); // from CDJScrobbler.localConfigFile
         } catch (IOException ioe) {
             logger.error("Error loading config properties from {}", localConfigFile, ioe);
             throw ioe;
@@ -326,7 +326,7 @@ public class Application implements LifecycleListener, Runnable, DeviceAnnouncem
         }
 
         if (Boolean.parseBoolean(lfmEnabled)) {
-            Application.lfmEnabled = true;
+            CDJScrobbler.lfmEnabled = true;
         } else {
             logger.warn("**************************************************************************************");
             logger.warn("* Scrobbling to Last.fm disabled. set cdjscrobbler.enable.lastfm=true in your config *");
@@ -334,7 +334,7 @@ public class Application implements LifecycleListener, Runnable, DeviceAnnouncem
         }
 
         if (Boolean.parseBoolean(twitterEnabled)) {
-            Application.twitterEnabled = true;
+            CDJScrobbler.twitterEnabled = true;
         } else {
             logger.warn("*********************************************************************************");
             logger.warn("* Tweeting tracks disabled. set cdjscrobbler.enable.twitter=true in your config *");
