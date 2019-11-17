@@ -91,6 +91,11 @@ public class CDJScrobbler implements LifecycleListener, Runnable, DeviceAnnounce
     @Option(names = {"-T", "--twitter-enabled"}, description = "Enable tweeting the tracklist")
     static boolean twitterEnabled;
 
+    @Option(names = {"--no-dmca-on-air-warning"},
+            negatable = true,
+            description = "Disable flashing the platter red if the loaded track would break DMCA rules")
+    static boolean dmcOnAirWarningEnabled = true;
+
     static String localConfigFile = System.getProperty("user.home") + File.separator + "cdjscrobbler.properties";
 
     public static void main(String[] args) throws Exception {
@@ -159,6 +164,8 @@ public class CDJScrobbler implements LifecycleListener, Runnable, DeviceAnnounce
             final LastFmClient lfm = getLfmClient(lfmEnabled);
             final TwitterClient twitter = getTwitterClient(twitterEnabled);
             final DmcaAccountant dmcaAccountant = new DmcaAccountant();
+            // start the on air warning
+            dmcaAccountant.start();
 
             songEventQueue = new LinkedBlockingQueue<>();
 
@@ -314,6 +321,7 @@ public class CDJScrobbler implements LifecycleListener, Runnable, DeviceAnnounce
         String retryDelay = config.getProperty("cdjscrobbler.retryDelayMs", "500");
         String lfmEnabled = config.getProperty("cdjscrobbler.enable.lastfm", "false");
         String twitterEnabled = config.getProperty("cdjscrobbler.enable.twitter", "false");
+        String dmcOnAirWarningEnabled = config.getProperty("dmcaaccountant.onairwarning.enabled", "true");
 
         if (nowPlayingPoint != null && !nowPlayingPoint.isEmpty()) {
             logger.info("Loaded Now Playing Point of {} ms", nowPlayingPoint);
@@ -339,6 +347,12 @@ public class CDJScrobbler implements LifecycleListener, Runnable, DeviceAnnounce
             logger.warn("*********************************************************************************");
             logger.warn("* Tweeting tracks disabled. set cdjscrobbler.enable.twitter=true in your config *");
             logger.warn("*********************************************************************************");
+        }
+
+        if (Boolean.parseBoolean(dmcOnAirWarningEnabled)) {
+            CDJScrobbler.dmcOnAirWarningEnabled = true;
+        } else {
+            logger.warn("DMCA On Air Warning disabled in config. You will still see warnings in the log.");
         }
     }
 
