@@ -34,9 +34,9 @@ import java.io.IOException;
  */
 public class ApplicationConfig extends ComboConfig {
     public void save() throws IOException {
-        ConfigFileUtil.save(Application.config, Application.localConfigFile);
+        ConfigFileUtil.save(CDJScrobbler.config, CDJScrobbler.localConfigFile);
     }
     public void load() throws IOException {
-        ConfigFileUtil.load(Application.config, Application.localConfigFile);
+        ConfigFileUtil.load(CDJScrobbler.config, CDJScrobbler.localConfigFile);
     }
 }
