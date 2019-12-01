@@ -46,20 +46,25 @@ import java.time.format.DateTimeFormatter;
 public class CsvLogger implements ScrobbleListener {
 
     static final Logger logger = LoggerFactory.getLogger(CsvLogger.class);
-    static final String FILENAME = "tracklist.csv";
     static final DateTimeFormatter timeFormatter = DateTimeFormatter.ofPattern("HH:mm:ss zzz");
 
     // These match fields that Serato would export, making this CSV compatible with
     // https://github.com/ben-xo/prepare-podcast
     static final String[] HEADERS = { "name","artist","start time" };
 
+    private String filename;
+
+    public CsvLogger(String filename) {
+        this.filename = filename;
+    }
+
     @Override
     public void scrobble(ScrobbleEvent event) {
         final SongDetails song = event.model.getSong();
         if(song != null) {
             try {
-                FileWriter out = new FileWriter(FILENAME, true);
-                File theFile = new File(FILENAME);
+                FileWriter out = new FileWriter(filename, true);
+                File theFile = new File(filename);
                 CSVFormat csvFormat = (theFile.length() == 0)
                         ? CSVFormat.DEFAULT.withHeader(HEADERS)
                         : CSVFormat.DEFAULT;
@@ -70,7 +75,7 @@ public class CsvLogger implements ScrobbleListener {
                     logger.info("Wrote {} to csv log", song);
                 }
             } catch (IOException e) {
-                logger.error("Could not write to CSV file {}", FILENAME);
+                logger.error("Could not write to CSV file {}", filename);
             }
         }
     }

@@ -88,6 +88,11 @@ public class CDJScrobbler implements Runnable {
             description = "Disable flashing the platter red if the loaded track would break DMCA rules")
     static boolean dmcOnAirWarningDisabled = false;
 
+    @Option(names = {"--csv"},
+            paramLabel = "<filename>",
+            description = "Output a CSV file compatible with https://github.com/ben-xo/prepare-podcast")
+    static String csvLogFile = "";
+
     public static void main(String[] args) throws Exception {
 
         // this stuff is necessary for the Last FM client
@@ -187,6 +192,11 @@ public class CDJScrobbler implements Runnable {
 
         // --disable-dmca-warning
         if(dmcOnAirWarningDisabled) oconfig.setDmcaAccountantEnabled(false);
+
+        if(! "".equals(csvLogFile)) {
+            oconfig.setCsvLoggerEnabled(true);
+            oconfig.setCsvLoggerFilename(csvLogFile);
+        }
 
         Orchestrator o = new Orchestrator(oconfig);
         o.run();
