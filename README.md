@@ -19,18 +19,20 @@ Run
 
         lastfm.api.key=a key you got from https://www.last.fm/api
         lastfm.api.secret=the secret that goes with that key
-        cdjscrobbler.enable.lastfm=true
-    
+
 
 * If you want to use the Tweet feature, you need to put the following into the file cdjscrobbler.properties in your home directory:
 
         twitter4j.oauth.consumerSecret=a key that you got from https://developer.twitter.com
         twitter4j.oauth.consumerKey=the secret that goes with that key
-        cdjscrobbler.enable.twitter=true
 
 * Finally, run it in Terminal or Command Prompt:
 
-        java -jar cdjscrobbler-1.0.jar 
+        java -jar cdjscrobbler-1.7.jar --twitter --lfm
+
+* For more information on the options,
+
+        java -jar cdjscrobbler-1.7.jar --help
 
 
 What's happening?
