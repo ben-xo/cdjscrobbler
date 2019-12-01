@@ -27,13 +27,6 @@
 
 package am.xo.cdjscrobbler;
 
-import am.xo.cdjscrobbler.Plugins.*;
-import com.github.scribejava.core.exceptions.OAuthException;
-import de.umass.lastfm.CallException;
-import org.deepsymmetry.beatlink.*;
-import org.deepsymmetry.beatlink.data.CrateDigger;
-import org.deepsymmetry.beatlink.data.MetadataFinder;
-import org.deepsymmetry.beatlink.dbserver.ConnectionManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.slf4j.bridge.SLF4JBridgeHandler;
@@ -42,8 +35,6 @@ import picocli.CommandLine.Option;
 
 import java.io.File;
 import java.io.IOException;
-import java.net.UnknownHostException;
-import java.util.concurrent.LinkedBlockingQueue;
 import java.util.logging.Level;
 
 import static picocli.CommandLine.Command;
@@ -51,14 +42,8 @@ import static picocli.CommandLine.Command;
 /**
  * This is where it all starts.
  *
- * The CDJScrobbler class is responsible for loading the configuration, creating Twitter and Last.fm clients, and
- * then hooking them up to the CDJ lifecycle through beat-link's VirtualCdj and MediaFinder.
- *
- * beat-link requires low latency (but delivers DeviceUpdates on the same thread), so the architecture is to
- * model the playing songs in one thread with the UpdateListener, and deliver events to the QueueProcessor
- * so that actions such as Tweeting or Scrobbling happen in a different thread.
- *
- * During set up, if configuration is missing for either Last.fm or Twitter, you will be prompted to authenticate.
+ * The CDJScrobbler class is responsible for loading the configuration (from configuration files and the command line)
+ * and then starting the Orchestrator to do all of the rest of the work.
  *
  */
 @Command(versionProvider = CDJScrobbler.VersionProvider.class,
@@ -73,228 +58,45 @@ import static picocli.CommandLine.Command;
         usageHelpAutoWidth = true,
         name = "cdjscrobbler",
         description = "Scrobbles tracks from Pioneer CDJ-2000 pro-link network.%n",
-        mixinStandardHelpOptions = true
+        mixinStandardHelpOptions = true,
+        sortOptions = false
 )
-public class CDJScrobbler implements LifecycleListener, Runnable, DeviceAnnouncementListener {
+public class CDJScrobbler implements Runnable {
     static final Logger logger = LoggerFactory.getLogger(CDJScrobbler.class);
+
+    // This is a composite config file loaded from the internal config, with the local --config overlaid.
+    // The local config file is used for saving things like the Twitter and Last.fm API credentials.
     static final CDJScrobblerConfig config = new CDJScrobblerConfig();
+
+    // This is the parsed config for the Orchestrator, derived from the config above.
+    static final OrchestratorConfig oconfig = new OrchestratorConfig();
+
     static final CDJScrobbler theApplication = new CDJScrobbler();
-    static final CsvLogger csvLogger = new CsvLogger();
 
-    static int retryDelay = 500; // override with setting cdjscrobbler.retryDelayMs
+    @Option(names = {"-L", "--lfm"}, description = "Enable Last.fm scrobbling")
+    static boolean lfmEnabled = false;
 
-    static byte oldDeviceNumber; // used for VirtualCdj / MetadataFinder compat with only 1 CDJ
+    @Option(names = {"-T", "--twitter"}, description = "Enable tweeting the tracklist")
+    static boolean twitterEnabled = false;
 
-    @Option(names = {"-L", "--lfm-enabled"}, description = "Enable Last.fm scrobbling")
-    static boolean lfmEnabled;
+    @Option(names = {"--config"},
+            paramLabel = "<filename>",
+            description = "Which config file to use. Defaults to cdjscrobbler.properties in your home directory")
+    static String confFile = System.getProperty("user.home") + File.separator + "cdjscrobbler.properties";
 
-    @Option(names = {"-T", "--twitter-enabled"}, description = "Enable tweeting the tracklist")
-    static boolean twitterEnabled;
-
-    @Option(names = {"--no-dmca-on-air-warning"},
-            negatable = true,
+    @Option(names = {"--no-dmca-warning"},
             description = "Disable flashing the platter red if the loaded track would break DMCA rules")
-    static boolean dmcOnAirWarningEnabled = true;
-
-    static String localConfigFile = System.getProperty("user.home") + File.separator + "cdjscrobbler.properties";
+    static boolean dmcOnAirWarningDisabled = false;
 
     public static void main(String[] args) throws Exception {
 
+        // this stuff is necessary for the Last FM client
         SLF4JBridgeHandler.removeHandlersForRootLogger();
         SLF4JBridgeHandler.install();
         java.util.logging.Logger.getLogger("").setLevel(Level.FINEST);
 
         loadStaticConfig();
         new CommandLine(theApplication).execute(args);
-    }
-
-    public static void setRetryDelay(int delay) {
-        retryDelay = delay;
-    }
-
-    public static LastFmClient getLfmClient(final boolean enabled) throws IOException {
-        LastFmClient lfm = null;
-        if (enabled) {
-            logger.info("Starting Last.fm Scrobbler…");
-            lfm = new LastFmClient(new LastFmClientConfig(config));
-            try {
-                lfm.ensureUserIsConnected();
-            } catch (CallException e) {
-                if (e.getCause() instanceof UnknownHostException) {
-                    logger.warn("** Looks like we're offline. Scrobbling disabled. **");
-                } else {
-                    throw e;
-                }
-            }
-        }
-        return lfm;
-    }
-
-    public static TwitterClient getTwitterClient(final boolean enabled) throws IOException {
-        TwitterClient twitter = null;
-        if (enabled) {
-            logger.info("Starting Twitter bot…");
-            twitter = new TwitterClient(new TwitterClientConfig(config));
-            try {
-                twitter.ensureUserIsConnected();
-            } catch (OAuthException e) {
-                if (e.getCause() instanceof UnknownHostException) {
-                    logger.warn("** Looks like we're offline. Tweeting disabled. **");
-                } else {
-                    throw e;
-                }
-            }
-        }
-        return twitter;
-    }
-
-    protected LinkedBlockingQueue<SongEvent> songEventQueue;
-    protected UpdateListener updateListener;
-    protected QueueProcessor queueProcessor;
-
-    @Override
-    public void run() {
-
-        logger.info("💿📀💿📀 CDJ Scrobbler v{} by Ben XO", config.getProperty("cdjscrobbler.version"));
-        logger.info("💿📀💿📀 https://github.com/ben-xo/cdjscrobbler");
-
-        try {
-            loadExternalConfig();
-
-            final LastFmClient lfm = getLfmClient(lfmEnabled);
-            final TwitterClient twitter = getTwitterClient(twitterEnabled);
-            final DmcaAccountant dmcaAccountant = new DmcaAccountant();
-            // start the on air warning
-            dmcaAccountant.start();
-
-            songEventQueue = new LinkedBlockingQueue<>();
-
-            // start two threads with a shared queue
-            // TODO: dynamically add and remove UpdateListeners as devices are announced
-            logger.info("Starting UpdateListener…");
-            updateListener = new UpdateListener(songEventQueue);
-            VirtualCdj.getInstance().addUpdateListener(updateListener);
-
-            startVirtualCdj();
-
-
-            logger.info("Starting QueueProcessor…");
-            queueProcessor = new QueueProcessor(songEventQueue);
-
-            // this must happen after startVirtualCdj() because ArtFinder starts MetadataFinder
-//            final ArtworkPopup artworkPopup = new ArtworkPopup();
-//            queueProcessor.addNowPlayingListener(artworkPopup);
-
-            queueProcessor.addScrobbleListener(csvLogger);
-
-            queueProcessor.addNewSongLoadedListener(dmcaAccountant);
-            queueProcessor.addNowPlayingListener(dmcaAccountant);
-
-            if (lfmEnabled) {
-                queueProcessor.addNowPlayingListener(lfm);
-                queueProcessor.addScrobbleListener(lfm);
-            }
-
-            if (twitterEnabled) {
-                queueProcessor.addNowPlayingListener(twitter);
-            }
-
-            queueProcessor.start(); // this doesn't return until shutdown (or exception)
-
-            // TODO: queue processor should probably have its own thread.
-
-        } catch(Exception e) {
-            e.printStackTrace();
-            System.exit(-1);
-        }
-    }
-
-    private void startVirtualCdj() throws InterruptedException {
-        ConnectionManager connectionManager = ConnectionManager.getInstance();
-        DeviceFinder deviceFinder = DeviceFinder.getInstance();
-        VirtualCdj virtualCdj = VirtualCdj.getInstance();
-        MetadataFinder metadataFinder = MetadataFinder.getInstance();
-        CrateDigger crateDigger = CrateDigger.getInstance();
-
-        // default is 10s, which is quite high when recovering from a network outage
-        connectionManager.setSocketTimeout(3000);
-        metadataFinder.addLifecycleListener(this);
-
-        boolean started;
-
-        logger.info("Starting VirtualCDJ…");
-
-        started = false;
-        do {
-            try {
-                started = virtualCdj.start();
-                oldDeviceNumber = virtualCdj.getDeviceNumber();
-            } catch (Exception e) {
-                logger.warn("Failed to start.", e);
-            }
-            if (!started) {
-                logger.info("Retrying VirtualCdj…");
-                Thread.sleep(retryDelay);
-            }
-        } while (!started);
-
-        // compat with 1 CDJ mode for MetadataFinder. Depends on oldDeviceNumber.
-        updateVirtualCdjNumber();
-        deviceFinder.addDeviceAnnouncementListener(this);
-
-        logger.info("Starting MetadataFinder…");
-
-        started = false;
-        do {
-            try {
-                metadataFinder.start();
-                started = metadataFinder.isRunning();
-            } catch (Exception e) {
-                logger.warn("Failed to start.", e);
-            }
-            if (!started) {
-                logger.info("Retrying MetadataFinder…");
-                Thread.sleep(retryDelay);
-            }
-        } while (!started);
-
-        do {
-            try {
-                crateDigger.start();
-            } catch(Exception e) {
-                logger.error("CrateDigger error (retrying):", e);
-                Thread.sleep(retryDelay);
-            }
-        } while(!crateDigger.isRunning());
-    }
-
-    /**
-     * Looks for a device number <= 4 that we can use for the MetadataFinder.
-     * <p>
-     * The MetadataFinder only works if it can use the ID of an unused "real" CDJ (1-4 - Rekordbox can use higher IDs)
-     * because it emulates a Pro-Link media browser. This means we either have to pick the ID of a CDJ that's not
-     * present. If you happen to have 4 real CDJs, it will automatically try to "borrow" an ID from one for a lookup -
-     * but that only works if there is one on the network that is not using Pro-Link right now. (If all 4 are using
-     * Pro-Link then sorry - you're out of luck!)
-     *
-     * @return byte a safe device number
-     */
-    private byte getFreeLowDeviceNumber() {
-        boolean[] taken = {false, false, false, false, false};
-        for (DeviceAnnouncement a : DeviceFinder.getInstance().getCurrentDevices()) {
-            int deviceNumber = a.getNumber();
-            if (deviceNumber <= 4) {
-                taken[deviceNumber] = true;
-            }
-        }
-
-        // try for 4 first.
-        for (byte t = 4; t > 0; t--) {
-            if (!taken[t]) {
-                return t;
-            }
-        }
-        throw new IllegalStateException("No free low device numbers");
     }
 
     private static void loadStaticConfig() throws IOException {
@@ -311,30 +113,34 @@ public class CDJScrobbler implements LifecycleListener, Runnable, DeviceAnnounce
         try {
             // load e.g. Last.fm and Twitter keys and tokens
             logger.info("Loading local client configuration");
-            config.load(); // from CDJScrobbler.localConfigFile
+            config.load(); // from CDJScrobbler.confFile
         } catch (IOException ioe) {
-            logger.error("Error loading config properties from {}", localConfigFile, ioe);
+            logger.error("Error loading config properties from {}", confFile, ioe);
             throw ioe;
         }
 
         String nowPlayingPoint = config.getProperty("cdjscrobbler.model.nowPlayingPointMs", "");
         String retryDelay = config.getProperty("cdjscrobbler.retryDelayMs", "500");
+
+
         String lfmEnabled = config.getProperty("cdjscrobbler.enable.lastfm", "false");
         String twitterEnabled = config.getProperty("cdjscrobbler.enable.twitter", "false");
         String dmcOnAirWarningEnabled = config.getProperty("dmcaaccountant.onairwarning.enabled", "true");
 
         if (nowPlayingPoint != null && !nowPlayingPoint.isEmpty()) {
             logger.info("Loaded Now Playing Point of {} ms", nowPlayingPoint);
+
+            // TODO: move this into OrchestratorConfig?
             SongModel.setNowPlayingPoint(Integer.parseInt(nowPlayingPoint));
         }
 
         if (retryDelay != null && !retryDelay.isEmpty()) {
             logger.info("Loaded Retry Delay of {} ms", retryDelay);
-            setRetryDelay(Integer.parseInt(nowPlayingPoint));
+            oconfig.setRetryDelay(Integer.parseInt(nowPlayingPoint));
         }
 
         if (Boolean.parseBoolean(lfmEnabled)) {
-            CDJScrobbler.lfmEnabled = true;
+            oconfig.setLfmEnabled(true);
         } else {
             logger.warn("**************************************************************************************");
             logger.warn("* Scrobbling to Last.fm disabled. set cdjscrobbler.enable.lastfm=true in your config *");
@@ -342,7 +148,7 @@ public class CDJScrobbler implements LifecycleListener, Runnable, DeviceAnnounce
         }
 
         if (Boolean.parseBoolean(twitterEnabled)) {
-            CDJScrobbler.twitterEnabled = true;
+            oconfig.setTwitterEnabled(true);
         } else {
             logger.warn("*********************************************************************************");
             logger.warn("* Tweeting tracks disabled. set cdjscrobbler.enable.twitter=true in your config *");
@@ -350,54 +156,41 @@ public class CDJScrobbler implements LifecycleListener, Runnable, DeviceAnnounce
         }
 
         if (Boolean.parseBoolean(dmcOnAirWarningEnabled)) {
-            CDJScrobbler.dmcOnAirWarningEnabled = true;
+            oconfig.setDmcaAccountantEnabled(true);
         } else {
             logger.warn("DMCA On Air Warning disabled in config. You will still see warnings in the log.");
         }
     }
 
     @Override
-    public void started(LifecycleParticipant sender) {
-        // jolly good!
-    }
+    public void run() {
 
-    @Override
-    public void stopped(LifecycleParticipant sender) {
-        logger.info("Attempting to restart because {} stopped", sender);
         try {
-            startVirtualCdj();
-        } catch (InterruptedException e) {
-            // looks like the app was shutting down. Accept fate.
+            loadExternalConfig();
+        } catch(IOException e) {
+            e.printStackTrace();
+            System.exit(-1);
         }
+
+        // TODO: clean up this API by passing in LFM and Twitter configs directly
+
+        oconfig.setFromProperties(config);
+
+        // saved configuration is overridden by command line configuration
+
+        // --lfm
+        if(lfmEnabled)              oconfig.setLfmEnabled(true);
+
+        // --twitter
+        if(twitterEnabled)          oconfig.setTwitterEnabled(true);
+
+        // --disable-dmca-warning
+        if(dmcOnAirWarningDisabled) oconfig.setDmcaAccountantEnabled(false);
+
+        Orchestrator o = new Orchestrator(oconfig);
+        o.run();
     }
 
-    @Override
-    public void deviceFound(DeviceAnnouncement deviceAnnouncement) {
-        updateVirtualCdjNumber();
-    }
-
-    @Override
-    public void deviceLost(DeviceAnnouncement deviceAnnouncement) {
-        updateVirtualCdjNumber();
-    }
-
-    /**
-     * MediaFinder throws a bunch of ugly exceptions if you don't try to give it a virtual CDJ number when there's
-     * only 1 virtual CDJ on the network.
-     */
-    void updateVirtualCdjNumber() {
-        if(DeviceFinder.getInstance().getCurrentDevices().size() == 1) {
-            try {
-                byte newDeviceNumber = getFreeLowDeviceNumber();
-                VirtualCdj.getInstance().setDeviceNumber(newDeviceNumber);
-                logger.info("Set virtual CDJ device number to {}", newDeviceNumber);
-            } catch (IllegalStateException e) {
-                logger.error("only 1 device no free devices?");
-            }
-        } else {
-            VirtualCdj.getInstance().setDeviceNumber(oldDeviceNumber);
-        }
-    }
 
     static class VersionProvider implements CommandLine.IVersionProvider {
 
