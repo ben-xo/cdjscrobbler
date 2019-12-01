@@ -106,7 +106,7 @@ public class CDJScrobbler implements Runnable {
         try {
             // load e.g. Last.fm and Twitter keys and tokens
             logger.info("Loading local client configuration");
-            config.load(); // from CDJScrobbler.localConfigFile
+            config.load(); // from CDJScrobbler.confFile
         } catch (IOException ioe) {
             logger.error("Error loading config properties from {}", confFile, ioe);
             throw ioe;
