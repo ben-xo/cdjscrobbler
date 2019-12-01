@@ -38,9 +38,7 @@ public class OrchestratorConfig {
     private boolean lfmEnabled = true;
     private String version;
 
-    public OrchestratorConfig(CDJScrobblerConfig config) {
-        this.config = config;
-    }
+    private int retryDelay; // override with setting cdjscrobbler.retryDelayMs
 
     public OrchestratorConfig setFromProperties(CDJScrobblerConfig c) {
         this.config = c;
@@ -73,6 +71,14 @@ public class OrchestratorConfig {
 
     public void setLfmEnabled(boolean lfmEnabled) {
         this.lfmEnabled = lfmEnabled;
+    }
+
+    public int getRetryDelay() {
+        return retryDelay;
+    }
+
+    public void setRetryDelay(int retryDelay) {
+        this.retryDelay = retryDelay;
     }
 
     public LastFmClientConfig getLastFmClientConfig() {

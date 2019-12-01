@@ -64,16 +64,10 @@ public class Orchestrator implements LifecycleListener, Runnable, DeviceAnnounce
     // TODO: make this configurable
     static final CsvLogger csvLogger = new CsvLogger();
 
-    int retryDelay; // override with setting cdjscrobbler.retryDelayMs
-
     static byte oldDeviceNumber; // used for VirtualCdj / MetadataFinder compat with only 1 CDJ
 
     public Orchestrator(OrchestratorConfig c) {
         config = c;
-    }
-
-    public void setRetryDelay(int delay) {
-        retryDelay = delay;
     }
 
     public static LastFmClient getLfmClient() throws IOException {
@@ -198,7 +192,7 @@ public class Orchestrator implements LifecycleListener, Runnable, DeviceAnnounce
             }
             if (!started) {
                 logger.info("Retrying VirtualCdj…");
-                Thread.sleep(retryDelay);
+                Thread.sleep(config.getRetryDelay());
             }
         } while (!started);
 
@@ -218,7 +212,7 @@ public class Orchestrator implements LifecycleListener, Runnable, DeviceAnnounce
             }
             if (!started) {
                 logger.info("Retrying MetadataFinder…");
-                Thread.sleep(retryDelay);
+                Thread.sleep(config.getRetryDelay());
             }
         } while (!started);
 
@@ -227,7 +221,7 @@ public class Orchestrator implements LifecycleListener, Runnable, DeviceAnnounce
                 crateDigger.start();
             } catch(Exception e) {
                 logger.error("CrateDigger error (retrying):", e);
-                Thread.sleep(retryDelay);
+                Thread.sleep(config.getRetryDelay());
             }
         } while(!crateDigger.isRunning());
     }

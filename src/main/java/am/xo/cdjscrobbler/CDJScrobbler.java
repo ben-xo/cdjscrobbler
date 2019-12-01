@@ -63,6 +63,7 @@ import static picocli.CommandLine.Command;
 public class CDJScrobbler implements Runnable {
     static final Logger logger = LoggerFactory.getLogger(CDJScrobbler.class);
     static final CDJScrobblerConfig config = new CDJScrobblerConfig();
+    static final OrchestratorConfig oconfig = new OrchestratorConfig();
     static CDJScrobbler theApplication = new CDJScrobbler();
 
     @Option(names = {"-L", "--lfm-enabled"}, description = "Enable Last.fm scrobbling")
@@ -78,14 +79,9 @@ public class CDJScrobbler implements Runnable {
 
     static String localConfigFile = System.getProperty("user.home") + File.separator + "cdjscrobbler.properties";
 
-    static int retryDelay = 500; // override with setting cdjscrobbler.retryDelayMs
-
-    public static void setRetryDelay(int delay) {
-        retryDelay = delay;
-    }
-
     public static void main(String[] args) throws Exception {
 
+        // this stuff is necessary for the Last FM client
         SLF4JBridgeHandler.removeHandlersForRootLogger();
         SLF4JBridgeHandler.install();
         java.util.logging.Logger.getLogger("").setLevel(Level.FINEST);
@@ -122,16 +118,18 @@ public class CDJScrobbler implements Runnable {
 
         if (nowPlayingPoint != null && !nowPlayingPoint.isEmpty()) {
             logger.info("Loaded Now Playing Point of {} ms", nowPlayingPoint);
+
+            // TODO: move this into OrchestratorConfig?
             SongModel.setNowPlayingPoint(Integer.parseInt(nowPlayingPoint));
         }
 
         if (retryDelay != null && !retryDelay.isEmpty()) {
             logger.info("Loaded Retry Delay of {} ms", retryDelay);
-            setRetryDelay(Integer.parseInt(nowPlayingPoint));
+            oconfig.setRetryDelay(Integer.parseInt(nowPlayingPoint));
         }
 
         if (Boolean.parseBoolean(lfmEnabled)) {
-            CDJScrobbler.lfmEnabled = true;
+            oconfig.setLfmEnabled(true);
         } else {
             logger.warn("**************************************************************************************");
             logger.warn("* Scrobbling to Last.fm disabled. set cdjscrobbler.enable.lastfm=true in your config *");
@@ -139,7 +137,7 @@ public class CDJScrobbler implements Runnable {
         }
 
         if (Boolean.parseBoolean(twitterEnabled)) {
-            CDJScrobbler.twitterEnabled = true;
+            oconfig.setTwitterEnabled(true);
         } else {
             logger.warn("*********************************************************************************");
             logger.warn("* Tweeting tracks disabled. set cdjscrobbler.enable.twitter=true in your config *");
@@ -147,7 +145,7 @@ public class CDJScrobbler implements Runnable {
         }
 
         if (Boolean.parseBoolean(dmcOnAirWarningEnabled)) {
-            CDJScrobbler.dmcOnAirWarningEnabled = true;
+            oconfig.setDmcaAccountantEnabled(true);
         } else {
             logger.warn("DMCA On Air Warning disabled in config. You will still see warnings in the log.");
         }
@@ -164,10 +162,7 @@ public class CDJScrobbler implements Runnable {
         }
 
         // TODO: clean up this API by passing in LFM and Twitter configs directly
-        OrchestratorConfig oconfig = new OrchestratorConfig(config);
-        oconfig.setFromProperties(config);
-        Orchestrator o = new Orchestrator(oconfig);
-        o.setRetryDelay(retryDelay);
+        Orchestrator o = new Orchestrator(oconfig.setFromProperties(config));
         o.run();
     }
 
