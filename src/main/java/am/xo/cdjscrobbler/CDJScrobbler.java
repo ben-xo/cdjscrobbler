@@ -77,7 +77,9 @@ public class CDJScrobbler implements Runnable {
             description = "Disable flashing the platter red if the loaded track would break DMCA rules")
     static boolean dmcOnAirWarningEnabled = true;
 
-    static String localConfigFile = System.getProperty("user.home") + File.separator + "cdjscrobbler.properties";
+    @Option(names = {"--config"},
+            description = "Which config file to use. Defaults to cdjscrobbler.properties in your home directory")
+    static String confFile = System.getProperty("user.home") + File.separator + "cdjscrobbler.properties";
 
     public static void main(String[] args) throws Exception {
 
@@ -106,12 +108,14 @@ public class CDJScrobbler implements Runnable {
             logger.info("Loading local client configuration");
             config.load(); // from CDJScrobbler.localConfigFile
         } catch (IOException ioe) {
-            logger.error("Error loading config properties from {}", localConfigFile, ioe);
+            logger.error("Error loading config properties from {}", confFile, ioe);
             throw ioe;
         }
 
         String nowPlayingPoint = config.getProperty("cdjscrobbler.model.nowPlayingPointMs", "");
         String retryDelay = config.getProperty("cdjscrobbler.retryDelayMs", "500");
+
+
         String lfmEnabled = config.getProperty("cdjscrobbler.enable.lastfm", "false");
         String twitterEnabled = config.getProperty("cdjscrobbler.enable.twitter", "false");
         String dmcOnAirWarningEnabled = config.getProperty("dmcaaccountant.onairwarning.enabled", "true");
