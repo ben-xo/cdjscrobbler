@@ -58,28 +58,35 @@ import static picocli.CommandLine.Command;
         usageHelpAutoWidth = true,
         name = "cdjscrobbler",
         description = "Scrobbles tracks from Pioneer CDJ-2000 pro-link network.%n",
-        mixinStandardHelpOptions = true
+        mixinStandardHelpOptions = true,
+        sortOptions = false
 )
 public class CDJScrobbler implements Runnable {
     static final Logger logger = LoggerFactory.getLogger(CDJScrobbler.class);
+
+    // This is a composite config file loaded from the internal config, with the local --config overlaid.
+    // The local config file is used for saving things like the Twitter and Last.fm API credentials.
     static final CDJScrobblerConfig config = new CDJScrobblerConfig();
+
+    // This is the parsed config for the Orchestrator, derived from the config above.
     static final OrchestratorConfig oconfig = new OrchestratorConfig();
-    static CDJScrobbler theApplication = new CDJScrobbler();
 
-    @Option(names = {"-L", "--lfm-enabled"}, description = "Enable Last.fm scrobbling")
-    static boolean lfmEnabled;
+    static final CDJScrobbler theApplication = new CDJScrobbler();
 
-    @Option(names = {"-T", "--twitter-enabled"}, description = "Enable tweeting the tracklist")
-    static boolean twitterEnabled;
+    @Option(names = {"-L", "--lfm"}, description = "Enable Last.fm scrobbling")
+    static boolean lfmEnabled = false;
 
-    @Option(names = {"--no-dmca-on-air-warning"},
-            negatable = true,
-            description = "Disable flashing the platter red if the loaded track would break DMCA rules")
-    static boolean dmcOnAirWarningEnabled = true;
+    @Option(names = {"-T", "--twitter"}, description = "Enable tweeting the tracklist")
+    static boolean twitterEnabled = false;
 
     @Option(names = {"--config"},
+            paramLabel = "<filename>",
             description = "Which config file to use. Defaults to cdjscrobbler.properties in your home directory")
     static String confFile = System.getProperty("user.home") + File.separator + "cdjscrobbler.properties";
+
+    @Option(names = {"--no-dmca-warning"},
+            description = "Disable flashing the platter red if the loaded track would break DMCA rules")
+    static boolean dmcOnAirWarningDisabled = false;
 
     public static void main(String[] args) throws Exception {
 
@@ -166,7 +173,21 @@ public class CDJScrobbler implements Runnable {
         }
 
         // TODO: clean up this API by passing in LFM and Twitter configs directly
-        Orchestrator o = new Orchestrator(oconfig.setFromProperties(config));
+
+        oconfig.setFromProperties(config);
+
+        // saved configuration is overridden by command line configuration
+
+        // --lfm
+        if(lfmEnabled)              oconfig.setLfmEnabled(true);
+
+        // --twitter
+        if(twitterEnabled)          oconfig.setTwitterEnabled(true);
+
+        // --disable-dmca-warning
+        if(dmcOnAirWarningDisabled) oconfig.setDmcaAccountantEnabled(false);
+
+        Orchestrator o = new Orchestrator(oconfig);
         o.run();
     }
 
