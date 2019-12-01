@@ -88,6 +88,11 @@ public class CDJScrobbler implements Runnable {
             description = "Disable flashing the platter red if the loaded track would break DMCA rules")
     static boolean dmcOnAirWarningDisabled = false;
 
+    @Option(names = {"--csv"},
+            paramLabel = "<filename>",
+            description = "Output a CSV file compatible with https://github.com/ben-xo/prepare-podcast")
+    static String csvLogFile = "";
+
     public static void main(String[] args) throws Exception {
 
         // this stuff is necessary for the Last FM client
@@ -119,9 +124,8 @@ public class CDJScrobbler implements Runnable {
             throw ioe;
         }
 
-        String nowPlayingPoint = config.getProperty("cdjscrobbler.model.nowPlayingPointMs", "");
+        String nowPlayingPoint = config.getProperty("cdjscrobbler.model.nowPlayingPointMs", "10000");
         String retryDelay = config.getProperty("cdjscrobbler.retryDelayMs", "500");
-
 
         String lfmEnabled = config.getProperty("cdjscrobbler.enable.lastfm", "false");
         String twitterEnabled = config.getProperty("cdjscrobbler.enable.twitter", "false");
@@ -136,23 +140,15 @@ public class CDJScrobbler implements Runnable {
 
         if (retryDelay != null && !retryDelay.isEmpty()) {
             logger.info("Loaded Retry Delay of {} ms", retryDelay);
-            oconfig.setRetryDelay(Integer.parseInt(nowPlayingPoint));
+            oconfig.setRetryDelay(Integer.parseInt(retryDelay));
         }
 
         if (Boolean.parseBoolean(lfmEnabled)) {
             oconfig.setLfmEnabled(true);
-        } else {
-            logger.warn("**************************************************************************************");
-            logger.warn("* Scrobbling to Last.fm disabled. set cdjscrobbler.enable.lastfm=true in your config *");
-            logger.warn("**************************************************************************************");
         }
 
         if (Boolean.parseBoolean(twitterEnabled)) {
             oconfig.setTwitterEnabled(true);
-        } else {
-            logger.warn("*********************************************************************************");
-            logger.warn("* Tweeting tracks disabled. set cdjscrobbler.enable.twitter=true in your config *");
-            logger.warn("*********************************************************************************");
         }
 
         if (Boolean.parseBoolean(dmcOnAirWarningEnabled)) {
@@ -180,12 +176,27 @@ public class CDJScrobbler implements Runnable {
 
         // --lfm
         if(lfmEnabled)              oconfig.setLfmEnabled(true);
+        if(!oconfig.isLfmEnabled()) {
+            logger.warn("*********************************************************************************************************");
+            logger.warn("* 💢 Scrobbling to Last.fm disabled. set cdjscrobbler.enable.lastfm=true in config or pass --lfm option *");
+            logger.warn("*********************************************************************************************************");
+        }
 
         // --twitter
         if(twitterEnabled)          oconfig.setTwitterEnabled(true);
+        if(!oconfig.isTwitterEnabled()) {
+            logger.warn("********************************************************************************************************");
+            logger.warn("* 💢 Tweeting tracks disabled. set cdjscrobbler.enable.twitter=true in config or pass --twitter option *");
+            logger.warn("********************************************************************************************************");
+        }
 
         // --disable-dmca-warning
         if(dmcOnAirWarningDisabled) oconfig.setDmcaAccountantEnabled(false);
+
+        if(! "".equals(csvLogFile)) {
+            oconfig.setCsvLoggerEnabled(true);
+            oconfig.setCsvLoggerFilename(csvLogFile);
+        }
 
         Orchestrator o = new Orchestrator(oconfig);
         o.run();

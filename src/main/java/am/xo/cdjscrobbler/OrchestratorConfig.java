@@ -36,7 +36,9 @@ public class OrchestratorConfig {
     private boolean dmcaAccountantEnabled = true;
     private boolean twitterEnabled = true;
     private boolean lfmEnabled = true;
+    private boolean csvLoggerEnabled = false;
     private String version;
+    private String csvLoggerFilename;
 
     private int retryDelay; // override with setting cdjscrobbler.retryDelayMs
 
@@ -79,6 +81,22 @@ public class OrchestratorConfig {
 
     public void setRetryDelay(int retryDelay) {
         this.retryDelay = retryDelay;
+    }
+
+    public String getCsvLoggerFilename() {
+        return csvLoggerFilename;
+    }
+
+    public void setCsvLoggerFilename(String csvLoggerFilename) {
+        this.csvLoggerFilename = csvLoggerFilename;
+    }
+
+    public boolean isCsvLoggerEnabled() {
+        return csvLoggerEnabled;
+    }
+
+    public void setCsvLoggerEnabled(boolean csvLoggerEnabled) {
+        this.csvLoggerEnabled = csvLoggerEnabled;
     }
 
     public LastFmClientConfig getLastFmClientConfig() {

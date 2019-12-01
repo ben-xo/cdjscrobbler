@@ -61,9 +61,6 @@ public class Orchestrator implements LifecycleListener, Runnable, DeviceAnnounce
     static final Logger logger = LoggerFactory.getLogger(Orchestrator.class);
     static OrchestratorConfig config;
 
-    // TODO: make this configurable
-    static final CsvLogger csvLogger = new CsvLogger();
-
     static byte oldDeviceNumber; // used for VirtualCdj / MetadataFinder compat with only 1 CDJ
 
     public Orchestrator(OrchestratorConfig c) {
@@ -105,6 +102,12 @@ public class Orchestrator implements LifecycleListener, Runnable, DeviceAnnounce
         return new DmcaAccountant();
     }
 
+    public static CsvLogger getCsvLogger() throws IOException {
+        logger.info("Logging the tracklist to {}", config.getCsvLoggerFilename());
+        CsvLogger csvLogger = new CsvLogger(config.getCsvLoggerFilename());
+        return csvLogger;
+    }
+
     protected LinkedBlockingQueue<SongEvent> songEventQueue;
     protected UpdateListener updateListener;
     protected QueueProcessor queueProcessor;
@@ -134,8 +137,10 @@ public class Orchestrator implements LifecycleListener, Runnable, DeviceAnnounce
 //            final ArtworkPopup artworkPopup = new ArtworkPopup();
 //            queueProcessor.addNowPlayingListener(artworkPopup);
 
-            // TODO: make this configurable
-            queueProcessor.addScrobbleListener(csvLogger);
+            if(config.isCsvLoggerEnabled()) {
+                CsvLogger csvLogger = getCsvLogger();
+                queueProcessor.addScrobbleListener(csvLogger);
+            }
 
             if(config.isDmcaAccountantEnabled()) {
                 final DmcaAccountant dmcaAccountant = getDmcaAccountant();
