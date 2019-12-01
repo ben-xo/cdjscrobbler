@@ -4,7 +4,7 @@
   <groupId>am.xo.cdjscrobbler</groupId>
   <artifactId>cdjscrobbler</artifactId>
   <packaging>jar</packaging>
-  <version>1.6</version>
+  <version>1.7-SNAPSHOT</version>
   <repositories>
     <repository>
       <!-- Used for lastfm-java because there is no official release withn HTTPS support, even though it's on github -->
