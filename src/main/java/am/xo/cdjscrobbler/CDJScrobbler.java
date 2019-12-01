@@ -42,14 +42,8 @@ import static picocli.CommandLine.Command;
 /**
  * This is where it all starts.
  *
- * The CDJScrobbler class is responsible for loading the configuration, creating Twitter and Last.fm clients, and
- * then hooking them up to the CDJ lifecycle through beat-link's VirtualCdj and MediaFinder.
- *
- * beat-link requires low latency (but delivers DeviceUpdates on the same thread), so the architecture is to
- * model the playing songs in one thread with the UpdateListener, and deliver events to the QueueProcessor
- * so that actions such as Tweeting or Scrobbling happen in a different thread.
- *
- * During set up, if configuration is missing for either Last.fm or Twitter, you will be prompted to authenticate.
+ * The CDJScrobbler class is responsible for loading the configuration (from configuration files and the command line)
+ * and then starting the Orchestrator to do all of the rest of the work.
  *
  */
 @Command(versionProvider = CDJScrobbler.VersionProvider.class,

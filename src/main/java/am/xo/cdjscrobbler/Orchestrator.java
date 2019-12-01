@@ -44,6 +44,19 @@ import java.io.IOException;
 import java.net.UnknownHostException;
 import java.util.concurrent.LinkedBlockingQueue;
 
+/**
+ * This is the main thread.
+ *
+ * The Orchestrator class is responsible for creating Twitter and Last.fm clients, and
+ * then hooking them up to the CDJ lifecycle through beat-link's VirtualCdj and MediaFinder.
+ *
+ * beat-link requires low latency (but delivers DeviceUpdates on the same thread), so the architecture is to
+ * model the playing songs in one thread with the UpdateListener, and deliver events to the QueueProcessor
+ * so that actions such as Tweeting or Scrobbling happen in a different thread.
+ *
+ * During set up, if configuration is missing for either Last.fm or Twitter, you will be prompted to authenticate.
+ *
+ */
 public class Orchestrator implements LifecycleListener, Runnable, DeviceAnnouncementListener {
     static final Logger logger = LoggerFactory.getLogger(Orchestrator.class);
     static OrchestratorConfig config;
