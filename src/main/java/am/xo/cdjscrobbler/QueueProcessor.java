@@ -27,12 +27,17 @@
 
 package am.xo.cdjscrobbler;
 
+import am.xo.cdjscrobbler.SongEventListeners.NewSongLoadedListener;
+import am.xo.cdjscrobbler.SongEventListeners.NowPlayingListener;
+import am.xo.cdjscrobbler.SongEventListeners.ScrobbleListener;
 import am.xo.cdjscrobbler.SongEvents.*;
 import org.deepsymmetry.beatlink.data.MetadataFinder;
 import org.deepsymmetry.beatlink.data.TrackMetadata;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.LinkedBlockingQueue;
 
 /**
@@ -52,10 +57,9 @@ public class QueueProcessor implements SongEventVisitor {
 
     private LinkedBlockingQueue<SongEvent> songEventQueue;
 
-    // TODO: generify this to decouple.
-    private LastFmClient lfm;
-    private TwitterClient twitter;
-    private DmcaAccountant dmcaAccountant = new DmcaAccountant();
+    private List<NewSongLoadedListener> newSongLoadedListeners = new ArrayList<>();
+    private List<NowPlayingListener> nowPlayingListeners = new ArrayList<>();
+    private List<ScrobbleListener> scrobbleListeners = new ArrayList<>();
 
     public QueueProcessor(LinkedBlockingQueue<SongEvent> songEvents) {
         this.songEventQueue = songEvents;
@@ -93,19 +97,8 @@ public class QueueProcessor implements SongEventVisitor {
             }
         }
 
-        if(event.model.song != null) {
-
-            // TODO: tell the DMCA song-warning plugin
-            dmcaAccountant.addPlayed(event.model.song);
-
-            if (lfm != null) {
-                lfm.updateNowPlaying(event);
-            }
-
-            if (twitter != null) {
-                twitter.sendNowPlaying(event);
-            }
-        }
+        // This sends the event to the Dmca Accountant, LastFM Client and Twitter Client etc (if configured)
+        nowPlayingListeners.forEach((listener) -> listener.nowPlaying(event));
     }
 
     @Override
@@ -115,9 +108,8 @@ public class QueueProcessor implements SongEventVisitor {
 
     @Override
     public void visit(ScrobbleEvent event) {
-        if(lfm != null) {
-            lfm.scrobble(event);
-        }
+        // This sends the event to the LastFM Client etc (if configured)
+        scrobbleListeners.forEach((listener) -> listener.scrobble(event));
     }
 
     @Override
@@ -134,17 +126,22 @@ public class QueueProcessor implements SongEventVisitor {
         if(metadata != null) {
             // save it back to the model so it can be used to determine the scrobble point
             event.model.song = new SongDetails(metadata);
-
-            // warn if playing the song might make the mix unstreamable on radio or on Mixcloud etc
-            dmcaAccountant.checkIsSafeToPlay(event.model.song);
         }
+
+        // This sends the event to the DmcaAccountant, etc (if configured).
+        // Main use is to warn if playing the song might make the mix unstreamable on radio or on Mixcloud etc
+        newSongLoadedListeners.forEach((listener) -> listener.newSongLoaded(event));
     }
 
-    public void setLfm(LastFmClient lfm) {
-        this.lfm = lfm;
+    public void addNewSongLoadedListener(NewSongLoadedListener l) {
+        newSongLoadedListeners.add(l);
     }
 
-    public void setTwitter(TwitterClient t) {
-        this.twitter = t;
+    public void addNowPlayingListener(NowPlayingListener l) {
+        nowPlayingListeners.add(l);
+    }
+
+    public void addScrobbleListener(ScrobbleListener l) {
+        scrobbleListeners.add(l);
     }
 }

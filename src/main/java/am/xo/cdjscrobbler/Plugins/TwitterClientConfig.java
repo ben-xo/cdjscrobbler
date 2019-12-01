@@ -25,65 +25,60 @@
  *
  */
 
-package am.xo.cdjscrobbler;
+package am.xo.cdjscrobbler.Plugins;
+
+import am.xo.cdjscrobbler.CDJScrobblerConfig;
 
 import java.io.IOException;
-import java.util.Properties;
 
 public class TwitterClientConfig {
 
-    private String oauthConsumerKey;
-    private String oauthConsumerSecret;
-    private String oauthAccessToken;
-    private String oauthAccessTokenSecret;
-    private String tweetTemplate;
-    private String userAgent;
+    private CDJScrobblerConfig config;
 
-    public TwitterClientConfig(Properties config) {
-        oauthConsumerKey       = config.getProperty("twitter4j.oauth.consumerKey","");
-        oauthConsumerSecret    = config.getProperty("twitter4j.oauth.consumerSecret", "");
-        oauthAccessToken       = config.getProperty("twitter4j.oauth.accessToken","");
-        oauthAccessTokenSecret = config.getProperty("twitter4j.oauth.accessTokenSecret", "");
-        tweetTemplate          = config.getProperty("cdjscrobbler.tweet.template", "Now Playing: {}");
-        userAgent              = config.getProperty("cdjscrobbler.useragent", "CDJ Scrobbler");
+    public TwitterClientConfig(CDJScrobblerConfig config) {
+        this.config = config;
     }
 
     public String getUserAgent() {
-        return userAgent;
+        return config.getProperty("cdjscrobbler.useragent", "CDJ Scrobbler");
     }
 
     public String getOAuthConsumerKey() {
-        return oauthConsumerKey;
+        return config.getProperty("twitter4j.oauth.consumerKey","");
     }
 
     public String getOAuthConsumerSecret() {
-        return oauthConsumerSecret;
+        return config.getProperty("twitter4j.oauth.consumerSecret", "");
     }
 
     public String getOAuthAccessToken() {
-        return oauthAccessToken;
+        return config.getProperty("twitter4j.oauth.accessToken","");
     }
 
     public String getOAuthAccessTokenSecret() {
-        return oauthAccessTokenSecret;
+        return config.getProperty("twitter4j.oauth.accessTokenSecret", "");
     }
 
     public String getTweetTemplate() {
-        return tweetTemplate;
+        return config.getProperty("cdjscrobbler.tweet.template", "Now Playing: {}");
     }
 
     public void assertConfigured() throws IOException {
-        if (oauthConsumerKey.isEmpty() || oauthConsumerSecret.isEmpty()) {
+        if (getOAuthConsumerKey().isEmpty() || getOAuthConsumerSecret().isEmpty()) {
             String msg = "You need to put a Twitter OAuth key and secret into your config. https://developer.twitter.com";
             throw new IOException(msg);
         }
     }
 
     public void setOauthAccessToken(String oauthAccessToken) {
-        this.oauthAccessToken = oauthAccessToken;
+        config.setProperty("twitter4j.oauth.accessToken", oauthAccessToken);
     }
 
     public void setOauthAccessTokenSecret(String oauthAccessTokenSecret) {
-        this.oauthAccessTokenSecret = oauthAccessTokenSecret;
+        config.setProperty("twitter4j.oauth.accessTokenSecret", oauthAccessTokenSecret);
+    }
+
+    public void save() throws IOException {
+        config.save();
     }
 }

@@ -25,8 +25,14 @@
  *
  */
 
-package am.xo.cdjscrobbler;
+package am.xo.cdjscrobbler.Plugins;
 
+import am.xo.cdjscrobbler.Plugins.Helpers.OnAirWarning;
+import am.xo.cdjscrobbler.SongDetails;
+import am.xo.cdjscrobbler.SongEventListeners.NewSongLoadedListener;
+import am.xo.cdjscrobbler.SongEventListeners.NowPlayingListener;
+import am.xo.cdjscrobbler.SongEvents.NewSongLoadedEvent;
+import am.xo.cdjscrobbler.SongEvents.NowPlayingEvent;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -37,10 +43,29 @@ import java.util.ArrayList;
  * would prevent your show being aired unrestricted on Mixcloud or other services which follow the "No more than 4 songs
  * by the same artist" DMCA rule
  */
-public class DmcaAccountant {
-    static final Logger logger = LoggerFactory.getLogger(Application.class);
+public class DmcaAccountant implements NowPlayingListener, NewSongLoadedListener {
+    static final Logger logger = LoggerFactory.getLogger(DmcaAccountant.class);
 
     ArrayList<SongDetails> played = new ArrayList<>();
+    OnAirWarning warning = new OnAirWarning();
+
+    public void start() {
+        warning.start();
+    }
+
+    @Override
+    public void newSongLoaded(NewSongLoadedEvent event) {
+        if(!checkIsSafeToPlay(event.model.getSong())) {
+            warning.setWarn(event.cdjStatus.getDeviceNumber());
+        } else {
+            warning.removeWarn(event.cdjStatus.getDeviceNumber());
+        }
+    }
+
+    @Override
+    public void nowPlaying(NowPlayingEvent event) {
+        addPlayed(event.model.getSong());
+    }
 
     public void addPlayed(SongDetails song) {
         if(song == null) {
@@ -51,13 +76,18 @@ public class DmcaAccountant {
         logger.info("Logged play for song {} - song #{}", song, played.size());
     }
 
-    public void checkIsSafeToPlay(SongDetails song) {
+    public boolean checkIsSafeToPlay(SongDetails song) {
         if(!isSafeToPlay(song)) {
             logger.warn("⚠️⚠️⚠️ Don't play this song!");
+            return false;
         }
+        return true;
     }
 
     public boolean isSafeToPlay(SongDetails song) {
+        if(song == null) {
+            return true;
+        }
         if(getArtistPlayCount(song.getArtist()) >= 4) {
             logger.warn("❌ You have already played artist {} 4 times this show.", song.getArtist());
             return false;

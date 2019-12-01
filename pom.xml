@@ -4,7 +4,7 @@
   <groupId>am.xo.cdjscrobbler</groupId>
   <artifactId>cdjscrobbler</artifactId>
   <packaging>jar</packaging>
-  <version>1.4.1</version>
+  <version>1.5</version>
   <repositories>
     <repository>
       <!-- Used for lastfm-java because there is no official release withn HTTPS support, even though it's on github -->
@@ -30,7 +30,7 @@
             <manifest>
               <addClasspath>true</addClasspath>
               <classpathPrefix>lib/</classpathPrefix>
-              <mainClass>am.xo.cdjscrobbler.Application</mainClass>
+              <mainClass>am.xo.cdjscrobbler.CDJScrobbler</mainClass>
             </manifest>
           </archive>
         </configuration>
@@ -65,7 +65,7 @@
             <manifest>
               <addClasspath>true</addClasspath>
               <classpathPrefix>lib/</classpathPrefix>
-              <mainClass>am.xo.cdjscrobbler.Application</mainClass>
+              <mainClass>am.xo.cdjscrobbler.CDJScrobbler</mainClass>
             </manifest>
           </archive>
         </configuration>
@@ -87,7 +87,7 @@
     <dependency>
       <groupId>org.deepsymmetry</groupId>
       <artifactId>beat-link</artifactId>
-      <version>0.5.2</version>
+      <version>0.6.0</version>
     </dependency>
     <!--
       ⚠️  Note ⚠️  lastfm-java 0.1.2 does not have HTTPS. So instead of depending on the latest mvn version (from 2012),
@@ -138,6 +138,11 @@
       <artifactId>slf4j-log4j12</artifactId>
       <version>1.7.28</version>
     </dependency>
+    <dependency>
+      <groupId>org.slf4j</groupId>
+      <artifactId>jul-to-slf4j</artifactId>
+      <version>1.7.28</version>
+    </dependency>
     <!-- This dependency is bundled with cdjscrobbler -->
     <!--
     <dependency>
@@ -146,5 +151,15 @@
       <version>1.0.2</version>
     </dependency>
     -->
+    <dependency>
+      <groupId>org.apache.commons</groupId>
+      <artifactId>commons-csv</artifactId>
+      <version>1.4</version>
+    </dependency>
+    <dependency>
+      <groupId>info.picocli</groupId>
+      <artifactId>picocli</artifactId>
+      <version>4.0.4</version>
+    </dependency>
   </dependencies>
 </project>

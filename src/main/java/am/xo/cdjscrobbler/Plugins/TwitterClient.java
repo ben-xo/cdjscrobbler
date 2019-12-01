@@ -25,8 +25,10 @@
  *
  */
 
-package am.xo.cdjscrobbler;
+package am.xo.cdjscrobbler.Plugins;
 
+import am.xo.cdjscrobbler.SongDetails;
+import am.xo.cdjscrobbler.SongEventListeners.NowPlayingListener;
 import am.xo.cdjscrobbler.SongEvents.NowPlayingEvent;
 import com.github.scribejava.apis.TwitterApi;
 import com.github.scribejava.core.builder.ServiceBuilder;
@@ -50,7 +52,7 @@ import java.util.concurrent.ExecutionException;
  * Call ensureUserIsConnected() to make sure we have a valid session, then sendNowPlaying to take action!
  *
  */
-public class TwitterClient {
+public class TwitterClient implements NowPlayingListener {
 
     private static final String PROTECTED_RESOURCE_URL = "https://api.twitter.com/1.1/account/verify_credentials.json";
 
@@ -114,9 +116,9 @@ public class TwitterClient {
 
     public void saveCredentials(String OAuthAccessToken, String OAuthAccessTokenSecret) {
         try {
-            Application.config.setProperty("twitter4j.oauth.accessToken", OAuthAccessToken);
-            Application.config.setProperty("twitter4j.oauth.accessTokenSecret", OAuthAccessTokenSecret);
-            ConfigFileUtil.save(Application.config, Application.localConfigFile);
+            config.setOauthAccessToken(OAuthAccessToken);
+            config.setOauthAccessTokenSecret(OAuthAccessTokenSecret);
+            config.save();
         } catch (IOException ex) {
             logger.error("🚫 Saving credentials failed!", ex);
             // carry on anyway
@@ -175,7 +177,8 @@ public class TwitterClient {
         return accessToken;
     }
 
-    public void sendNowPlaying(NowPlayingEvent npe) {
+    @Override
+    public void nowPlaying(NowPlayingEvent npe) {
         Twitter twitter = getTwitterFromConfig();
         SongDetails song = npe.model.getSong();
         String[] params = { song.getFullTitle() };

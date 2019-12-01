@@ -170,7 +170,16 @@ public class SongModel {
     public String shortString() {
         return currentState.name()
                 + " song: " + (song == null ? "<unknown>" : song)
-                + " playtime: " + Long.toString(totalPlayTime) + " ms";
+                + " playtime: " + displayPlayTime();
+    }
+
+    public String displayPlayTime() {
+        final long totalSeconds = totalPlayTime / 1000;
+        final long minutes = totalSeconds / 60;
+        final long seconds = totalSeconds % 60;
+        final long millis = totalPlayTime % 1000;
+        final long frames = millis * 75 / 1000;
+        return String.format("%dm:%02ds%02df", minutes, seconds, frames);
     }
 
     public SongDetails getSong() {

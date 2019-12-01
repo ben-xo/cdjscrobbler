@@ -1,5 +1,5 @@
-CDJ Scrobbler v1.4.1
---------------------
+CDJ Scrobbler v1.5
+---------------------------
 
 CDJ Scrobbler is a Last.fm Scrobbler for Pioneer CDJ / XDJ (e.g. CDJ 2000) based on beat-link.
 
@@ -89,4 +89,6 @@ CDJ Scrobbler was written by @benxo (https://twitter.com/benxo) and uses the fol
 * Twitter4J          (http://twitter4j.org/) - Apache License 2.0
 * Ordered Properties (https://github.com/etiennestuder/java-ordered-properties) - Apache License 2.0
   (This is copied into the project as it's not available on maven central)
+* Picocli            (https://github.com/remkop/picocli) - Apache License 2.0
+
 

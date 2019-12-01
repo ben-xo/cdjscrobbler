@@ -70,10 +70,13 @@ public class SongDetails {
         return getFullTitle();
     }
 
-    // access delegates for the TrackMeatadata for the Song.
+    // access delegates for the TrackMetadata for the Song.
 
     public String getArtist() {
-        return theTrack.getArtist().label;
+        if(theTrack.getArtist() != null) {
+            return theTrack.getArtist().label;
+        }
+        return "";
     }
 
     public String getTitle() {
@@ -81,7 +84,10 @@ public class SongDetails {
     }
 
     public String getAlbum() {
-        return theTrack.getAlbum().label;
+        if(theTrack.getAlbum() != null) {
+            return theTrack.getAlbum().label;
+        }
+        return "";
     }
 
     public int getDuration() {
