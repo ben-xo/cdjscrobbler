@@ -74,7 +74,7 @@ public class Orchestrator implements LifecycleListener, Runnable, DeviceAnnounce
         config = c;
     }
 
-    public static LastFmClient getLfmClient() throws IOException {
+    public static LastFmClient getLfmClient() throws IOException, ConfigException {
         logger.info("Starting Last.fm Scrobbler…");
         LastFmClient lfm = new LastFmClient(config.getLastFmClientConfig());
         try {
