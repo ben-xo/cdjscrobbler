@@ -42,10 +42,14 @@ import com.github.scribejava.core.oauth.OAuth10aService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.slf4j.helpers.MessageFormatter;
+import twitter4j.HttpClient;
+import twitter4j.HttpClientConfiguration;
+import twitter4j.HttpClientFactory;
 import twitter4j.Twitter;
 import twitter4j.TwitterException;
 import twitter4j.TwitterFactory;
 import twitter4j.conf.ConfigurationBuilder;
+import twitter4j.conf.ConfigurationContext;
 
 import java.io.IOException;
 import java.util.Scanner;
@@ -204,7 +208,17 @@ public class TwitterClient implements NowPlayingListener {
                 .setOAuthAccessToken(config.getOAuthAccessToken())
                 .setOAuthAccessTokenSecret(config.getOAuthAccessTokenSecret())
         ;
+
+        setCustomUserAgent(config.getUserAgent());
         TwitterFactory tf = new TwitterFactory(cb.build());
         return tf.getInstance();
+    }
+
+    protected void setCustomUserAgent(String ua) {
+        HttpClientConfiguration c = ConfigurationContext.getInstance().getHttpClientConfiguration();
+        HttpClient http = HttpClientFactory.getInstance(c);
+        String oldUA = http.getRequestHeaders().get("User-Agent");
+        String newUA = MessageFormatter.format("{} ({})", ua, oldUA).getMessage();
+        http.addDefaultRequestHeader("User-Agent", newUA);
     }
 }
