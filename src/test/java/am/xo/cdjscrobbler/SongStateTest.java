@@ -27,6 +27,7 @@
 
 package am.xo.cdjscrobbler;
 
+import am.xo.cdjscrobbler.SongEvents.NewSongLoadedEvent;
 import junit.framework.TestCase;
 import org.deepsymmetry.beatlink.CdjStatus;
 import org.junit.Before;
@@ -105,12 +106,18 @@ public class SongStateTest extends TestCase {
         assertEquals(SongState.CUEING, m.currentState);
     }
 
+    @Test
     public void test_STARTED_records_basic_song_details_when_a_song_starts() {
-
+        when(update.getRekordboxId()).thenReturn(200);
+        when(m.isPlayingForward(update)).thenReturn(true);
+        SongState.STARTED.applyNext(m, update);
+        assertEquals(200, m.rekordboxId);
     }
 
+    @Test
     public void test_STARTED_does_emits_event_when_song_is_playing() {
-
+        when(m.isPlayingForward(update)).thenReturn(true);
+        assertEquals(NewSongLoadedEvent.class, SongState.STARTED.applyNext(m,update).getClass());
     }
 
     public void test_CUEING_adds_playtime_to_model() {
