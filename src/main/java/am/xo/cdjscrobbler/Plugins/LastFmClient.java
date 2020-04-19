@@ -77,7 +77,7 @@ public class LastFmClient implements NowPlayingListener, ScrobbleListener {
      * was found, then the user is prompted to authorize against Last.fm. (If you wait too long this will eventually
      * time out).
      *
-     * @throws IOException
+     * @throws IOException, ConfigException
      */
     public void ensureUserIsConnected() throws IOException, ConfigException {
 
