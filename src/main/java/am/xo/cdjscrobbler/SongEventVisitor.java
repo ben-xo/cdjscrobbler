@@ -27,7 +27,11 @@
 
 package am.xo.cdjscrobbler;
 
-import am.xo.cdjscrobbler.SongEvents.*;
+import am.xo.cdjscrobbler.SongEvents.NewSongLoadedEvent;
+import am.xo.cdjscrobbler.SongEvents.NowPlayingEvent;
+import am.xo.cdjscrobbler.SongEvents.ResetEvent;
+import am.xo.cdjscrobbler.SongEvents.ScrobbleEvent;
+import am.xo.cdjscrobbler.SongEvents.TransitionEvent;
 
 /**
  * Interface which visitors to SongEvents must implement. (Not all visitors need to handle all events, but all visitors
