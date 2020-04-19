@@ -49,6 +49,10 @@ public class DmcaAccountant implements NowPlayingListener, NewSongLoadedListener
     ArrayList<SongDetails> played = new ArrayList<>();
     OnAirWarning warning = new OnAirWarning();
 
+    /**
+     * Starts a an OnAirWarning instance which will flash lights on the CDJ.
+     * TODO: change this to be a bounded thread only when there are warnings, rather than an infinite loop.
+     */
     public void start() {
         warning.start();
     }
