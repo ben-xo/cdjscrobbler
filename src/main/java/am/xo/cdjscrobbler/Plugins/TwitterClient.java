@@ -27,6 +27,7 @@
 
 package am.xo.cdjscrobbler.Plugins;
 
+import am.xo.cdjscrobbler.ConfigException;
 import am.xo.cdjscrobbler.SongDetails;
 import am.xo.cdjscrobbler.SongEventListeners.NowPlayingListener;
 import am.xo.cdjscrobbler.SongEvents.NowPlayingEvent;
@@ -84,16 +85,11 @@ public class TwitterClient implements NowPlayingListener {
      *
      * @throws IOException
      */
-    public void ensureUserIsConnected() throws IOException {
+    public void ensureUserIsConnected() throws IOException, ConfigException {
 
         String OAuthAccessToken, OAuthAccessTokenSecret;
 
-        try {
-            config.assertConfigured();
-        } catch(IOException ioe) {
-            logger.error("Connection to Twitter failed: {}", ioe.getMessage());
-            throw ioe;
-        }
+        config.assertConfigured();
 
         do {
             OAuthAccessToken = config.getOAuthAccessToken();

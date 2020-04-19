@@ -28,6 +28,7 @@
 package am.xo.cdjscrobbler.Plugins;
 
 import am.xo.cdjscrobbler.CDJScrobblerConfig;
+import am.xo.cdjscrobbler.ConfigException;
 
 import java.io.IOException;
 
@@ -63,10 +64,13 @@ public class TwitterClientConfig {
         return config.getProperty("cdjscrobbler.tweet.template", "Now Playing: {}");
     }
 
-    public void assertConfigured() throws IOException {
+    public void assertConfigured() throws ConfigException {
         if (getOAuthConsumerKey().isEmpty() || getOAuthConsumerSecret().isEmpty()) {
-            String msg = "You need to put a Twitter OAuth key and secret into your config. https://developer.twitter.com";
-            throw new IOException(msg);
+            String msg = "You need to put a Twitter OAuth key and secret into your config. Expected properties:"
+                    +  "\n* twitter4j.oauth.consumerKey"
+                    +  "\n* twitter4j.oauth.consumerSecret"
+                    +  "\nYou can obtain these from https://developer.twitter.com";
+            throw new ConfigException(msg);
         }
     }
 
