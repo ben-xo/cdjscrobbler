@@ -49,6 +49,8 @@ import java.io.IOException;
 import java.net.UnknownHostException;
 import java.util.concurrent.LinkedBlockingQueue;
 
+import static am.xo.cdjscrobbler.CDJScrobbler.confFile;
+
 /**
  * This is the main thread.
  *
@@ -87,7 +89,7 @@ public class Orchestrator implements LifecycleListener, Runnable, DeviceAnnounce
         return lfm;
     }
 
-    public static TwitterClient getTwitterClient() throws IOException {
+    public static TwitterClient getTwitterClient() throws IOException, ConfigException {
         logger.info("Starting Twitter bot…");
         TwitterClient twitter = new TwitterClient(config.getTwitterClientConfig());
         try {
@@ -124,6 +126,12 @@ public class Orchestrator implements LifecycleListener, Runnable, DeviceAnnounce
         logger.info("💿📀💿📀 https://github.com/ben-xo/cdjscrobbler");
 
         try {
+
+            // deal with items that require authorization first - you don't need a CDJ present
+            // in order to log in to Twitter, for example.
+            final LastFmClient lfm = config.isLfmEnabled() ? getLfmClient() : null;
+            final TwitterClient twitter = config.isTwitterEnabled() ? getTwitterClient() : null;
+
             songEventQueue = new LinkedBlockingQueue<>();
 
             // start two threads with a shared queue
@@ -142,12 +150,12 @@ public class Orchestrator implements LifecycleListener, Runnable, DeviceAnnounce
 //            final ArtworkPopup artworkPopup = new ArtworkPopup();
 //            queueProcessor.addNowPlayingListener(artworkPopup);
 
-            if(config.isCsvLoggerEnabled()) {
+            if (config.isCsvLoggerEnabled()) {
                 CsvLogger csvLogger = getCsvLogger();
                 queueProcessor.addScrobbleListener(csvLogger);
             }
 
-            if(config.isDmcaAccountantEnabled()) {
+            if (config.isDmcaAccountantEnabled()) {
                 final DmcaAccountant dmcaAccountant = getDmcaAccountant();
 
                 // start the on air warning
@@ -156,24 +164,25 @@ public class Orchestrator implements LifecycleListener, Runnable, DeviceAnnounce
                 queueProcessor.addNowPlayingListener(dmcaAccountant);
             }
 
-            if (config.isLfmEnabled()) {
-                final LastFmClient lfm = getLfmClient();
+            if (lfm != null) {
                 queueProcessor.addNowPlayingListener(lfm);
                 queueProcessor.addScrobbleListener(lfm);
             }
 
-            if (config.isTwitterEnabled()) {
-                final TwitterClient twitter = getTwitterClient();
+            if (twitter != null) {
                 queueProcessor.addNowPlayingListener(twitter);
             }
 
             queueProcessor.start(); // this doesn't return until shutdown (or exception)
 
             // TODO: queue processor should probably have its own thread.
-
+        } catch(ConfigException e) {
+            // config exceptions should be user friendly, so we don't print out a stack trace
+            logger.error("\nThere was a problem with the configuration file {}\n{}", confFile, e.getMessage());
+            System.exit(-2);
         } catch(Exception e) {
             e.printStackTrace();
-            System.exit(-1);
+            System.exit(-3);
         }
     }
 
