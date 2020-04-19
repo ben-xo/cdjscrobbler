@@ -35,6 +35,7 @@ import picocli.CommandLine.Option;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.NoSuchFileException;
 import java.util.logging.Level;
 
 import static picocli.CommandLine.Command;
@@ -119,8 +120,10 @@ public class CDJScrobbler implements Runnable {
             // load e.g. Last.fm and Twitter keys and tokens
             logger.info("Loading local client configuration");
             config.load(); // from CDJScrobbler.confFile
+        } catch (NoSuchFileException e) {
+            logger.info("Conf file {} not present.", confFile);
         } catch (IOException ioe) {
-            logger.error("Error loading config properties from {}", confFile, ioe);
+            logger.error("Error loading config properties from {}: {}", confFile, ioe);
             throw ioe;
         }
 
