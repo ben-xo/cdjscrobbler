@@ -28,6 +28,7 @@
 package am.xo.cdjscrobbler.Plugins;
 
 import am.xo.cdjscrobbler.CDJScrobblerConfig;
+import am.xo.cdjscrobbler.ConfigException;
 
 import java.io.IOException;
 
@@ -59,10 +60,13 @@ public class LastFmClientConfig {
         config.setProperty("lastfm.api.sk", apiSk);
     }
 
-    public void assertConfigured() throws IOException {
+    public void assertConfigured() throws ConfigException {
         if (getApiKey().isEmpty() || getApiSecret().isEmpty()) {
-            String msg = "You need to put a Last.fm API key and API secret into your config. https://www.last.fm/api";
-            throw new IOException(msg);
+            String msg = "You need to put a Last.fm API key and API secret into your config. Expected properties:"
+                    +  "\n* lastfm.api.key"
+                    +  "\n* lastfm.api.secret"
+                    +  "\nYou can obtain these from https://www.last.fm/api";
+            throw new ConfigException(msg);
         }
     }
 

@@ -27,6 +27,7 @@
 
 package am.xo.cdjscrobbler.Plugins;
 
+import am.xo.cdjscrobbler.ConfigException;
 import am.xo.cdjscrobbler.SongDetails;
 import am.xo.cdjscrobbler.SongEventListeners.NowPlayingListener;
 import am.xo.cdjscrobbler.SongEventListeners.ScrobbleListener;
@@ -78,19 +79,14 @@ public class LastFmClient implements NowPlayingListener, ScrobbleListener {
      *
      * @throws IOException
      */
-    public void ensureUserIsConnected() throws IOException {
+    public void ensureUserIsConnected() throws IOException, ConfigException {
 
         String apiKey = config.getApiKey();
         String apiSecret = config.getApiSecret();
         String apiSk = config.getApiSk();
 
         do {
-            try {
-                config.assertConfigured();
-            } catch(IOException ioe) {
-                logger.error("Connection to Last.fm failed: {}", ioe.getMessage());
-                throw ioe;
-            }
+            config.assertConfigured();
 
             if (apiSk.isEmpty()) {
                 // trigger auth flow
