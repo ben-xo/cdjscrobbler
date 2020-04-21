@@ -39,19 +39,27 @@ import com.github.scribejava.core.model.OAuthRequest;
 import com.github.scribejava.core.model.Response;
 import com.github.scribejava.core.model.Verb;
 import com.github.scribejava.core.oauth.OAuth10aService;
+import org.deepsymmetry.beatlink.data.AlbumArt;
+import org.deepsymmetry.beatlink.data.ArtFinder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.slf4j.helpers.MessageFormatter;
 import twitter4j.HttpClient;
 import twitter4j.HttpClientConfiguration;
 import twitter4j.HttpClientFactory;
+import twitter4j.StatusUpdate;
 import twitter4j.Twitter;
 import twitter4j.TwitterException;
 import twitter4j.TwitterFactory;
 import twitter4j.conf.ConfigurationBuilder;
 import twitter4j.conf.ConfigurationContext;
 
+import javax.imageio.ImageIO;
+import java.awt.image.BufferedImage;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.util.Scanner;
 import java.util.concurrent.ExecutionException;
 
@@ -186,11 +194,36 @@ public class TwitterClient implements NowPlayingListener {
         Twitter twitter = getTwitterFromConfig();
         SongDetails song = npe.model.getSong();
         String[] params = { song.getFullTitle() };
+        StatusUpdate statusUpdate = new StatusUpdate(
+                MessageFormatter.arrayFormat(config.getTweetTemplate(), params).getMessage()
+        );
         try {
-            twitter.tweets().updateStatus(MessageFormatter.arrayFormat(config.getTweetTemplate(), params).getMessage());
+            if(config.getShouldAttachCoverArt()) {
+                attachImageTo(statusUpdate, npe);
+            }
+            tweet(twitter, statusUpdate);
             logger.info("🎸 now playing {}", song);
         } catch(TwitterException e) {
             logger.error("🚫 failed to tweet 'now playing': {}", e.getMessage());
+        }
+    }
+
+    protected void tweet(Twitter twitter, StatusUpdate update) throws TwitterException {
+        twitter.tweets().updateStatus(update);
+    }
+
+    protected void attachImageTo(StatusUpdate statusUpdate, NowPlayingEvent npe) {
+        AlbumArt art = ArtFinder.getInstance().getLatestArtFor(npe.cdjStatus);
+        if(art != null) {
+            BufferedImage image = art.getImage();
+            ByteArrayOutputStream os = new ByteArrayOutputStream();
+            try {
+                ImageIO.write(image, "jpeg", os);
+                InputStream is = new ByteArrayInputStream(os.toByteArray());
+                statusUpdate.media("cover", is);
+            } catch (IOException e) {
+                logger.warn("🖼 couldn't process cover art': {}", e.getMessage());
+            }
         }
     }
 
