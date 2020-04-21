@@ -80,6 +80,9 @@ public class CDJScrobbler implements Runnable {
     @Option(names = {"-T", "--twitter"}, description = "Enable tweeting the tracklist")
     static boolean twitterEnabled = false;
 
+    @Option(names = {"--twitter-cover-art"}, description = "Enable tweeting cover art with each tweet")
+    static boolean twitterCoverArtEnabled = false;
+
     @Option(names = {"--config"},
             paramLabel = "<filename>",
             description = "Which config file to use. Defaults to cdjscrobbler.properties in your home directory")
@@ -193,8 +196,11 @@ public class CDJScrobbler implements Runnable {
             logger.warn("********************************************************************************************************");
         }
 
+        // --twitter-cover-art
+        if(twitterCoverArtEnabled)   config.setProperty("cdjscrobbler.tweet.attachcoverart", "true");
+
         // --disable-dmca-warning
-        if(dmcOnAirWarningDisabled) oconfig.setDmcaAccountantEnabled(false);
+        if(dmcOnAirWarningDisabled)  oconfig.setDmcaAccountantEnabled(false);
 
         if(! "".equals(csvLogFile)) {
             oconfig.setCsvLoggerEnabled(true);
