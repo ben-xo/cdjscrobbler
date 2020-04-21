@@ -111,8 +111,7 @@ public class Orchestrator implements LifecycleListener, Runnable, DeviceAnnounce
 
     public static CsvLogger getCsvLogger() throws IOException {
         logger.info("Logging the tracklist to {}", config.getCsvLoggerFilename());
-        CsvLogger csvLogger = new CsvLogger(config.getCsvLoggerFilename());
-        return csvLogger;
+        return new CsvLogger(config.getCsvLoggerFilename());
     }
 
     protected LinkedBlockingQueue<SongEvent> songEventQueue;
@@ -186,6 +185,7 @@ public class Orchestrator implements LifecycleListener, Runnable, DeviceAnnounce
         }
     }
 
+    @SuppressWarnings("BusyWait")
     private void startVirtualCdj() throws InterruptedException {
         ConnectionManager connectionManager = ConnectionManager.getInstance();
         DeviceFinder deviceFinder = DeviceFinder.getInstance();
