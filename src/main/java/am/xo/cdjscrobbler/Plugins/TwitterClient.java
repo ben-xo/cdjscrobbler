@@ -216,13 +216,16 @@ public class TwitterClient implements NowPlayingListener {
         AlbumArt art = ArtFinder.getInstance().getLatestArtFor(npe.cdjStatus);
         if(art != null) {
             BufferedImage image = art.getImage();
-            ByteArrayOutputStream os = new ByteArrayOutputStream();
-            try {
-                ImageIO.write(image, "jpeg", os);
-                InputStream is = new ByteArrayInputStream(os.toByteArray());
-                statusUpdate.media("cover", is);
-            } catch (IOException e) {
-                logger.warn("🖼 couldn't process cover art': {}", e.getMessage());
+            if(image != null) {
+                ByteArrayOutputStream os = new ByteArrayOutputStream();
+                try {
+                    ImageIO.write(image, "jpeg", os);
+                    InputStream is = new ByteArrayInputStream(os.toByteArray());
+                    statusUpdate.media("cover", is);
+                } catch (IOException e) {
+                    logger.warn("🖼 couldn't process cover art': {}", e.getMessage());
+                    // ignore and carry on tweeting the text-only version.
+                }
             }
         }
     }
