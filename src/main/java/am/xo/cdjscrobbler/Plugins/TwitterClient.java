@@ -196,6 +196,8 @@ public class TwitterClient implements NowPlayingListener {
         try {
             if(config.getShouldAttachCoverArt()) {
                 attachImageTo(statusUpdate, npe);
+            } else {
+                logger.debug("cover art disabled in config");
             }
             tweet(twitter, statusUpdate);
             logger.info("🎸 now playing {}", song);
@@ -209,11 +211,17 @@ public class TwitterClient implements NowPlayingListener {
     }
 
     protected void attachImageTo(StatusUpdate statusUpdate, NowPlayingEvent npe) {
-        AlbumArt art = ArtFinder.getInstance().getLatestArtFor(npe.cdjStatus);
+        ArtFinder artFinder = ArtFinder.getInstance();
+        if(!artFinder.isRunning()) {
+            logger.error("ArtFinder isn't running! Cover art not available.");
+        }
+        AlbumArt art = artFinder.getLatestArtFor(npe.cdjStatus);
         if(art != null) {
             // as luck would have it, ByteBufferBackedInputStream comes with Jackson,
             // which is already a dependency via Scribe
             statusUpdate.media("cover", new ByteBufferBackedInputStream(art.getRawBytes()));
+        } else {
+            logger.warn("No cover art found for this tweet.");
         }
     }
 
