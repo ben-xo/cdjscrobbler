@@ -27,14 +27,8 @@
 
 package am.xo.cdjscrobbler;
 
-import am.xo.cdjscrobbler.SongEventListeners.NewSongLoadedListener;
-import am.xo.cdjscrobbler.SongEventListeners.NowPlayingListener;
-import am.xo.cdjscrobbler.SongEventListeners.ScrobbleListener;
-import am.xo.cdjscrobbler.SongEvents.NewSongLoadedEvent;
-import am.xo.cdjscrobbler.SongEvents.NowPlayingEvent;
-import am.xo.cdjscrobbler.SongEvents.ResetEvent;
-import am.xo.cdjscrobbler.SongEvents.ScrobbleEvent;
-import am.xo.cdjscrobbler.SongEvents.TransitionEvent;
+import am.xo.cdjscrobbler.SongEventListeners.*;
+import am.xo.cdjscrobbler.SongEvents.*;
 import org.deepsymmetry.beatlink.data.MetadataFinder;
 import org.deepsymmetry.beatlink.data.TrackMetadata;
 import org.slf4j.Logger;
@@ -74,6 +68,7 @@ public class QueueProcessor implements SongEventVisitor {
      *
      * @throws InterruptedException
      */
+    @SuppressWarnings("InfiniteLoopStatement")
     public void start() throws InterruptedException {
         while(true) {
             SongEvent songEvent = songEventQueue.take(); // this blocks until an event is ready.
