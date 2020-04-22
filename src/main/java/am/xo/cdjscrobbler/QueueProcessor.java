@@ -59,11 +59,11 @@ public class QueueProcessor implements SongEventVisitor {
 
     static final Logger logger = LoggerFactory.getLogger(QueueProcessor.class);
 
-    private LinkedBlockingQueue<SongEvent> songEventQueue;
+    private final LinkedBlockingQueue<SongEvent> songEventQueue;
 
-    private List<NewSongLoadedListener> newSongLoadedListeners = new ArrayList<>();
-    private List<NowPlayingListener> nowPlayingListeners = new ArrayList<>();
-    private List<ScrobbleListener> scrobbleListeners = new ArrayList<>();
+    private final List<NewSongLoadedListener> newSongLoadedListeners = new ArrayList<>();
+    private final List<NowPlayingListener> nowPlayingListeners = new ArrayList<>();
+    private final List<ScrobbleListener> scrobbleListeners = new ArrayList<>();
 
     public QueueProcessor(LinkedBlockingQueue<SongEvent> songEvents) {
         this.songEventQueue = songEvents;
