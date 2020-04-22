@@ -39,6 +39,7 @@ import org.deepsymmetry.beatlink.DeviceFinder;
 import org.deepsymmetry.beatlink.LifecycleListener;
 import org.deepsymmetry.beatlink.LifecycleParticipant;
 import org.deepsymmetry.beatlink.VirtualCdj;
+import org.deepsymmetry.beatlink.data.ArtFinder;
 import org.deepsymmetry.beatlink.data.CrateDigger;
 import org.deepsymmetry.beatlink.data.MetadataFinder;
 import org.deepsymmetry.beatlink.dbserver.ConnectionManager;
@@ -200,7 +201,6 @@ public class Orchestrator implements LifecycleListener, Runnable, DeviceAnnounce
         boolean started;
 
         logger.info("Starting VirtualCDJ…");
-
         started = false;
         do {
             try {
@@ -220,7 +220,6 @@ public class Orchestrator implements LifecycleListener, Runnable, DeviceAnnounce
         deviceFinder.addDeviceAnnouncementListener(this);
 
         logger.info("Starting MetadataFinder…");
-
         started = false;
         do {
             try {
@@ -235,6 +234,7 @@ public class Orchestrator implements LifecycleListener, Runnable, DeviceAnnounce
             }
         } while (!started);
 
+        logger.info("Starting CrateDigger…");
         do {
             try {
                 crateDigger.start();
@@ -243,6 +243,19 @@ public class Orchestrator implements LifecycleListener, Runnable, DeviceAnnounce
                 Thread.sleep(config.getRetryDelay());
             }
         } while(!crateDigger.isRunning());
+
+        if(config.getTwitterClientConfig().getShouldAttachCoverArt()) {
+            logger.info("Starting ArtFinder for tweeting cover art…");
+            ArtFinder artFinder = ArtFinder.getInstance();
+            do {
+                try {
+                    artFinder.start();
+                } catch (Exception e) {
+                    logger.error("ArtFinder error (retrying):", e);
+                    Thread.sleep(config.getRetryDelay());
+                }
+            } while (!artFinder.isRunning());
+        }
     }
 
     /**
