@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 CDJ Scrobbler v1.8-SNAPSHOT
 ---------------------------
 
@@ -47,6 +48,7 @@ Options
 
     -L, --lfm                 Enable Last.fm scrobbling
     -T, --twitter             Enable tweeting the tracklist
+        --twitter-cover-art   Enable tweeting cover art with each tweet
         --config=<filename>   Which config file to use. Defaults to cdjscrobbler.properties in your home directory
         --no-dmca-warning     Disable flashing the platter red if the loaded track would break DMCA rules
         --csv=<filename>      Output a CSV file compatible with https://github.com/ben-xo/prepare-podcast
