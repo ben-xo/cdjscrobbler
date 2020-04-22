@@ -1,5 +1,5 @@
-CDJ Scrobbler v1.7-SNAPSHOT
----------------------------
+CDJ Scrobbler v1.7
+------------------
 
 CDJ Scrobbler is a Last.fm Scrobbler for Pioneer CDJ / XDJ (e.g. CDJ 2000) based on beat-link.
 
@@ -47,6 +47,7 @@ Options
 
     -L, --lfm                 Enable Last.fm scrobbling
     -T, --twitter             Enable tweeting the tracklist
+        --twitter-cover-art   Enable tweeting cover art with each tweet
         --config=<filename>   Which config file to use. Defaults to cdjscrobbler.properties in your home directory
         --no-dmca-warning     Disable flashing the platter red if the loaded track would break DMCA rules
         --csv=<filename>      Output a CSV file compatible with https://github.com/ben-xo/prepare-podcast
