@@ -1,6 +1,8 @@
 CDJ Scrobbler v1.8-SNAPSHOT
 ---------------------------
 
+![Java CI with Maven](https://github.com/ben-xo/cdjscrobbler/workflows/Java%20CI%20with%20Maven/badge.svg?branch=develop)
+
 CDJ Scrobbler is a Last.fm Scrobbler for Pioneer CDJ / XDJ (e.g. CDJ 2000) based on beat-link.
 
 
