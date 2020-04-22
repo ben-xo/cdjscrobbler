@@ -31,6 +31,7 @@ import am.xo.cdjscrobbler.ConfigException;
 import am.xo.cdjscrobbler.SongDetails;
 import am.xo.cdjscrobbler.SongEventListeners.NowPlayingListener;
 import am.xo.cdjscrobbler.SongEvents.NowPlayingEvent;
+import com.fasterxml.jackson.databind.util.ByteBufferBackedInputStream;
 import com.github.scribejava.apis.TwitterApi;
 import com.github.scribejava.core.builder.ServiceBuilder;
 import com.github.scribejava.core.model.OAuth1AccessToken;
@@ -54,12 +55,7 @@ import twitter4j.TwitterFactory;
 import twitter4j.conf.ConfigurationBuilder;
 import twitter4j.conf.ConfigurationContext;
 
-import javax.imageio.ImageIO;
-import java.awt.image.BufferedImage;
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.io.InputStream;
 import java.util.Scanner;
 import java.util.concurrent.ExecutionException;
 
@@ -215,18 +211,9 @@ public class TwitterClient implements NowPlayingListener {
     protected void attachImageTo(StatusUpdate statusUpdate, NowPlayingEvent npe) {
         AlbumArt art = ArtFinder.getInstance().getLatestArtFor(npe.cdjStatus);
         if(art != null) {
-            BufferedImage image = art.getImage();
-            if(image != null) {
-                ByteArrayOutputStream os = new ByteArrayOutputStream();
-                try {
-                    ImageIO.write(image, "jpeg", os);
-                    InputStream is = new ByteArrayInputStream(os.toByteArray());
-                    statusUpdate.media("cover", is);
-                } catch (IOException e) {
-                    logger.warn("🖼 couldn't process cover art': {}", e.getMessage());
-                    // ignore and carry on tweeting the text-only version.
-                }
-            }
+            // as luck would have it, ByteBufferBackedInputStream comes with Jackson,
+            // which is already a dependency via Scribe
+            statusUpdate.media("cover", new ByteBufferBackedInputStream(art.getRawBytes()));
         }
     }
 
