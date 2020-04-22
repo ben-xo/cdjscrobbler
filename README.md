@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 CDJ Scrobbler v1.8-SNAPSHOT
 ---------------------------
 
