@@ -27,13 +27,18 @@
 
 package am.xo.cdjscrobbler.Plugins;
 
+import am.xo.cdjscrobbler.ConfigException;
 import am.xo.cdjscrobbler.SongDetails;
 import am.xo.cdjscrobbler.SongEventListeners.NowPlayingListener;
 import am.xo.cdjscrobbler.SongEventListeners.ScrobbleListener;
 import am.xo.cdjscrobbler.SongEvents.NowPlayingEvent;
 import am.xo.cdjscrobbler.SongEvents.ScrobbleEvent;
 import am.xo.cdjscrobbler.SongModel;
-import de.umass.lastfm.*;
+import de.umass.lastfm.Authenticator;
+import de.umass.lastfm.Caller;
+import de.umass.lastfm.Session;
+import de.umass.lastfm.Track;
+import de.umass.lastfm.User;
 import de.umass.lastfm.scrobble.ScrobbleData;
 import de.umass.lastfm.scrobble.ScrobbleResult;
 import org.slf4j.Logger;
@@ -72,21 +77,16 @@ public class LastFmClient implements NowPlayingListener, ScrobbleListener {
      * was found, then the user is prompted to authorize against Last.fm. (If you wait too long this will eventually
      * time out).
      *
-     * @throws IOException
+     * @throws IOException, ConfigException
      */
-    public void ensureUserIsConnected() throws IOException {
+    public void ensureUserIsConnected() throws IOException, ConfigException {
 
         String apiKey = config.getApiKey();
         String apiSecret = config.getApiSecret();
         String apiSk = config.getApiSk();
 
         do {
-            try {
-                config.assertConfigured();
-            } catch(IOException ioe) {
-                logger.error("Connection to Last.fm failed: {}", ioe.getMessage());
-                throw ioe;
-            }
+            config.assertConfigured();
 
             if (apiSk.isEmpty()) {
                 // trigger auth flow

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, Ben XO.
+ * Copyright (c) 2020, Ben XO.
  * All rights reserved.
  *
  * Redistribution and use of this software in source and binary forms, with or without modification, are
@@ -25,23 +25,22 @@
  *
  */
 
-package am.xo.cdjscrobbler;
+package am.xo.cdjscrobbler.SongEvents;
 
-import am.xo.cdjscrobbler.SongEvents.NewSongLoadedEvent;
-import am.xo.cdjscrobbler.SongEvents.NowPlayingEvent;
-import am.xo.cdjscrobbler.SongEvents.ResetEvent;
-import am.xo.cdjscrobbler.SongEvents.ScrobbleEvent;
-import am.xo.cdjscrobbler.SongEvents.TransitionEvent;
+import am.xo.cdjscrobbler.SongEventTestBase;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.mockito.junit.MockitoJUnitRunner;
 
-/**
- * Interface which visitors to SongEvents must implement. (Not all visitors need to handle all events, but all visitors
- * must implement all methods). Both UpdateListener and QueueProcessor are SongEventVisitors, for different reasons.
- */
-public interface SongEventVisitor {
+import static org.mockito.Mockito.verify;
 
-    void visit(NewSongLoadedEvent event);
-    void visit(NowPlayingEvent event);
-    void visit(ScrobbleEvent event);
-    void visit(ResetEvent event);
-    void visit(TransitionEvent event);
+@RunWith(MockitoJUnitRunner.class)
+public class ScrobbleEventTest extends SongEventTestBase {
+
+    @Test
+    public void test_visitation() {
+        ScrobbleEvent songEvent = new ScrobbleEvent(songModel, cdjStatus);
+        songEvent.accept(visitor);
+        verify(visitor).visit(songEvent);
+    }
 }

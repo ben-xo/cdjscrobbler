@@ -32,8 +32,11 @@ import am.xo.cdjscrobbler.SongEvents.NowPlayingEvent;
 import org.deepsymmetry.beatlink.data.AlbumArt;
 import org.deepsymmetry.beatlink.data.ArtFinder;
 
-import javax.swing.*;
-import java.awt.*;
+import javax.swing.ImageIcon;
+import javax.swing.JFrame;
+import javax.swing.JLabel;
+import javax.swing.SwingUtilities;
+import java.awt.BorderLayout;
 import java.awt.image.BufferedImage;
 
 public class ArtworkPopup implements NowPlayingListener {

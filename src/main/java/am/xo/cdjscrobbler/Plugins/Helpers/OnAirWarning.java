@@ -31,15 +31,15 @@ import org.deepsymmetry.beatlink.VirtualCdj;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
+
+import static java.util.Collections.emptySet;
 
 public class OnAirWarning extends Thread {
     static final Logger logger = LoggerFactory.getLogger(OnAirWarning.class);
 
     static final HashSet<Integer> playersToWarn = new HashSet<>();
-    static final Set<Integer> noPlayers = Collections.emptySet();
     static boolean hasChanged = false;
 
     public void setWarn(int cdj) {
@@ -59,7 +59,7 @@ public class OnAirWarning extends Thread {
     @Override
     public void run()
     {
-        Set<Integer> playersToWarnCopy = Collections.EMPTY_SET;
+        Set<Integer> playersToWarnCopy = emptySet();
         try {
             while (true) {
                 synchronized (playersToWarn) {
@@ -70,7 +70,7 @@ public class OnAirWarning extends Thread {
                 if (!playersToWarnCopy.isEmpty()) {
                     VirtualCdj.getInstance().sendOnAirCommand(playersToWarnCopy);
                     Thread.sleep(250);
-                    VirtualCdj.getInstance().sendOnAirCommand(Collections.EMPTY_SET);
+                    VirtualCdj.getInstance().sendOnAirCommand(emptySet());
                 }
                 // don't accidentally put this inside the if() - 100% CPU awaits if you do
                 Thread.sleep(250);

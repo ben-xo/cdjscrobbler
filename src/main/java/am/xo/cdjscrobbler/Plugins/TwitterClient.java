@@ -27,20 +27,33 @@
 
 package am.xo.cdjscrobbler.Plugins;
 
+import am.xo.cdjscrobbler.ConfigException;
 import am.xo.cdjscrobbler.SongDetails;
 import am.xo.cdjscrobbler.SongEventListeners.NowPlayingListener;
 import am.xo.cdjscrobbler.SongEvents.NowPlayingEvent;
+import com.fasterxml.jackson.databind.util.ByteBufferBackedInputStream;
 import com.github.scribejava.apis.TwitterApi;
 import com.github.scribejava.core.builder.ServiceBuilder;
-import com.github.scribejava.core.model.*;
+import com.github.scribejava.core.model.OAuth1AccessToken;
+import com.github.scribejava.core.model.OAuth1RequestToken;
+import com.github.scribejava.core.model.OAuthRequest;
+import com.github.scribejava.core.model.Response;
+import com.github.scribejava.core.model.Verb;
 import com.github.scribejava.core.oauth.OAuth10aService;
+import org.deepsymmetry.beatlink.data.AlbumArt;
+import org.deepsymmetry.beatlink.data.ArtFinder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.slf4j.helpers.MessageFormatter;
+import twitter4j.HttpClient;
+import twitter4j.HttpClientConfiguration;
+import twitter4j.HttpClientFactory;
+import twitter4j.StatusUpdate;
 import twitter4j.Twitter;
 import twitter4j.TwitterException;
 import twitter4j.TwitterFactory;
 import twitter4j.conf.ConfigurationBuilder;
+import twitter4j.conf.ConfigurationContext;
 
 import java.io.IOException;
 import java.util.Scanner;
@@ -80,16 +93,11 @@ public class TwitterClient implements NowPlayingListener {
      *
      * @throws IOException
      */
-    public void ensureUserIsConnected() throws IOException {
+    public void ensureUserIsConnected() throws IOException, ConfigException {
 
         String OAuthAccessToken, OAuthAccessTokenSecret;
 
-        try {
-            config.assertConfigured();
-        } catch(IOException ioe) {
-            logger.error("Connection to Twitter failed: {}", ioe.getMessage());
-            throw ioe;
-        }
+        config.assertConfigured();
 
         do {
             OAuthAccessToken = config.getOAuthAccessToken();
@@ -182,11 +190,38 @@ public class TwitterClient implements NowPlayingListener {
         Twitter twitter = getTwitterFromConfig();
         SongDetails song = npe.model.getSong();
         String[] params = { song.getFullTitle() };
+        StatusUpdate statusUpdate = new StatusUpdate(
+                MessageFormatter.arrayFormat(config.getTweetTemplate(), params).getMessage()
+        );
         try {
-            twitter.tweets().updateStatus(MessageFormatter.arrayFormat(config.getTweetTemplate(), params).getMessage());
+            if(config.getShouldAttachCoverArt()) {
+                attachImageTo(statusUpdate, npe);
+            } else {
+                logger.debug("cover art disabled in config");
+            }
+            tweet(twitter, statusUpdate);
             logger.info("🎸 now playing {}", song);
         } catch(TwitterException e) {
             logger.error("🚫 failed to tweet 'now playing': {}", e.getMessage());
+        }
+    }
+
+    protected void tweet(Twitter twitter, StatusUpdate update) throws TwitterException {
+        twitter.tweets().updateStatus(update);
+    }
+
+    protected void attachImageTo(StatusUpdate statusUpdate, NowPlayingEvent npe) {
+        ArtFinder artFinder = ArtFinder.getInstance();
+        if(!artFinder.isRunning()) {
+            logger.error("ArtFinder isn't running! Cover art not available.");
+        }
+        AlbumArt art = artFinder.getLatestArtFor(npe.cdjStatus);
+        if(art != null) {
+            // as luck would have it, ByteBufferBackedInputStream comes with Jackson,
+            // which is already a dependency via Scribe
+            statusUpdate.media("cover", new ByteBufferBackedInputStream(art.getRawBytes()));
+        } else {
+            logger.warn("No cover art found for this tweet.");
         }
     }
 
@@ -204,7 +239,17 @@ public class TwitterClient implements NowPlayingListener {
                 .setOAuthAccessToken(config.getOAuthAccessToken())
                 .setOAuthAccessTokenSecret(config.getOAuthAccessTokenSecret())
         ;
+
+        setCustomUserAgent(config.getUserAgent());
         TwitterFactory tf = new TwitterFactory(cb.build());
         return tf.getInstance();
+    }
+
+    protected void setCustomUserAgent(String ua) {
+        HttpClientConfiguration c = ConfigurationContext.getInstance().getHttpClientConfiguration();
+        HttpClient http = HttpClientFactory.getInstance(c);
+        String oldUA = http.getRequestHeaders().get("User-Agent");
+        String newUA = MessageFormatter.format("{} ({})", ua, oldUA).getMessage();
+        http.addDefaultRequestHeader("User-Agent", newUA);
     }
 }

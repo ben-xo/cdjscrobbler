@@ -27,9 +27,7 @@
 
 package am.xo.cdjscrobbler;
 
-import am.xo.cdjscrobbler.SongEventListeners.NewSongLoadedListener;
-import am.xo.cdjscrobbler.SongEventListeners.NowPlayingListener;
-import am.xo.cdjscrobbler.SongEventListeners.ScrobbleListener;
+import am.xo.cdjscrobbler.SongEventListeners.*;
 import am.xo.cdjscrobbler.SongEvents.*;
 import org.deepsymmetry.beatlink.data.MetadataFinder;
 import org.deepsymmetry.beatlink.data.TrackMetadata;
@@ -55,11 +53,11 @@ public class QueueProcessor implements SongEventVisitor {
 
     static final Logger logger = LoggerFactory.getLogger(QueueProcessor.class);
 
-    private LinkedBlockingQueue<SongEvent> songEventQueue;
+    private final LinkedBlockingQueue<SongEvent> songEventQueue;
 
-    private List<NewSongLoadedListener> newSongLoadedListeners = new ArrayList<>();
-    private List<NowPlayingListener> nowPlayingListeners = new ArrayList<>();
-    private List<ScrobbleListener> scrobbleListeners = new ArrayList<>();
+    private final List<NewSongLoadedListener> newSongLoadedListeners = new ArrayList<>();
+    private final List<NowPlayingListener> nowPlayingListeners = new ArrayList<>();
+    private final List<ScrobbleListener> scrobbleListeners = new ArrayList<>();
 
     public QueueProcessor(LinkedBlockingQueue<SongEvent> songEvents) {
         this.songEventQueue = songEvents;
@@ -70,6 +68,7 @@ public class QueueProcessor implements SongEventVisitor {
      *
      * @throws InterruptedException
      */
+    @SuppressWarnings("InfiniteLoopStatement")
     public void start() throws InterruptedException {
         while(true) {
             SongEvent songEvent = songEventQueue.take(); // this blocks until an event is ready.

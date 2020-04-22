@@ -4,7 +4,7 @@
   <groupId>am.xo.cdjscrobbler</groupId>
   <artifactId>cdjscrobbler</artifactId>
   <packaging>jar</packaging>
-  <version>1.6</version>
+  <version>1.7-SNAPSHOT</version>
   <repositories>
     <repository>
       <!-- Used for lastfm-java because there is no official release withn HTTPS support, even though it's on github -->
@@ -107,8 +107,19 @@
     </dependency>
     <dependency>
       <groupId>com.github.scribejava</groupId>
+      <artifactId>scribejava-core</artifactId>
+      <version>6.8.1</version>
+    </dependency>
+    <dependency>
+      <groupId>com.github.scribejava</groupId>
       <artifactId>scribejava-apis</artifactId>
       <version>6.8.1</version>
+    </dependency>
+    <!-- from Jackson we use ByteBufferBackedInputStream, but it's also a dependency of Scribe -->
+    <dependency>
+      <groupId>com.fasterxml.jackson.core</groupId>
+      <artifactId>jackson-databind</artifactId>
+      <version>2.9.9.3</version>
     </dependency>
     <dependency>
       <groupId>org.twitter4j</groupId>
@@ -118,14 +129,14 @@
     <dependency>
       <groupId>junit</groupId>
       <artifactId>junit</artifactId>
-      <version>3.8.1</version>
+      <version>4.12</version>
       <scope>test</scope>
     </dependency>
     <!-- https://mvnrepository.com/artifact/org.mockito/mockito-core -->
     <dependency>
       <groupId>org.mockito</groupId>
       <artifactId>mockito-core</artifactId>
-      <version>2.28.2</version>
+      <version>3.3.3</version>
       <scope>test</scope>
     </dependency>
     <dependency>
@@ -135,15 +146,14 @@
     </dependency>
     <dependency>
       <groupId>org.slf4j</groupId>
-      <artifactId>slf4j-log4j12</artifactId>
-      <version>1.7.28</version>
-    </dependency>
-    <dependency>
-      <groupId>org.slf4j</groupId>
       <artifactId>jul-to-slf4j</artifactId>
       <version>1.7.28</version>
     </dependency>
-    <!-- This dependency is bundled with cdjscrobbler -->
+     <dependency>
+       <groupId>org.slf4j</groupId>
+       <artifactId>slf4j-log4j12</artifactId>
+       <version>1.7.28</version>
+    </dependency>    <!-- This dependency is bundled with cdjscrobbler -->
     <!--
     <dependency>
       <groupId>nu.studer</groupId>

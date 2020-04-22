@@ -35,6 +35,7 @@ import picocli.CommandLine.Option;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.NoSuchFileException;
 import java.util.logging.Level;
 
 import static picocli.CommandLine.Command;
@@ -79,6 +80,9 @@ public class CDJScrobbler implements Runnable {
     @Option(names = {"-T", "--twitter"}, description = "Enable tweeting the tracklist")
     static boolean twitterEnabled = false;
 
+    @Option(names = {"--twitter-cover-art"}, description = "Enable tweeting cover art with each tweet")
+    static boolean twitterCoverArtEnabled = false;
+
     @Option(names = {"--config"},
             paramLabel = "<filename>",
             description = "Which config file to use. Defaults to cdjscrobbler.properties in your home directory")
@@ -119,8 +123,10 @@ public class CDJScrobbler implements Runnable {
             // load e.g. Last.fm and Twitter keys and tokens
             logger.info("Loading local client configuration");
             config.load(); // from CDJScrobbler.confFile
+        } catch (NoSuchFileException e) {
+            logger.info("Conf file {} not present.", confFile);
         } catch (IOException ioe) {
-            logger.error("Error loading config properties from {}", confFile, ioe);
+            logger.error("Error loading config properties from {}: {}", confFile, ioe);
             throw ioe;
         }
 
@@ -190,8 +196,11 @@ public class CDJScrobbler implements Runnable {
             logger.warn("********************************************************************************************************");
         }
 
+        // --twitter-cover-art
+        if(twitterCoverArtEnabled)   config.setProperty("cdjscrobbler.tweet.attachcoverart", "true");
+
         // --disable-dmca-warning
-        if(dmcOnAirWarningDisabled) oconfig.setDmcaAccountantEnabled(false);
+        if(dmcOnAirWarningDisabled)  oconfig.setDmcaAccountantEnabled(false);
 
         if(! "".equals(csvLogFile)) {
             oconfig.setCsvLoggerEnabled(true);

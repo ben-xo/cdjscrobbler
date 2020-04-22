@@ -33,7 +33,13 @@ import am.xo.cdjscrobbler.Plugins.LastFmClient;
 import am.xo.cdjscrobbler.Plugins.TwitterClient;
 import com.github.scribejava.core.exceptions.OAuthException;
 import de.umass.lastfm.CallException;
-import org.deepsymmetry.beatlink.*;
+import org.deepsymmetry.beatlink.DeviceAnnouncement;
+import org.deepsymmetry.beatlink.DeviceAnnouncementListener;
+import org.deepsymmetry.beatlink.DeviceFinder;
+import org.deepsymmetry.beatlink.LifecycleListener;
+import org.deepsymmetry.beatlink.LifecycleParticipant;
+import org.deepsymmetry.beatlink.VirtualCdj;
+import org.deepsymmetry.beatlink.data.ArtFinder;
 import org.deepsymmetry.beatlink.data.CrateDigger;
 import org.deepsymmetry.beatlink.data.MetadataFinder;
 import org.deepsymmetry.beatlink.dbserver.ConnectionManager;
@@ -43,6 +49,8 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.net.UnknownHostException;
 import java.util.concurrent.LinkedBlockingQueue;
+
+import static am.xo.cdjscrobbler.CDJScrobbler.confFile;
 
 /**
  * This is the main thread.
@@ -67,7 +75,7 @@ public class Orchestrator implements LifecycleListener, Runnable, DeviceAnnounce
         config = c;
     }
 
-    public static LastFmClient getLfmClient() throws IOException {
+    public static LastFmClient getLfmClient() throws IOException, ConfigException {
         logger.info("Starting Last.fm Scrobbler…");
         LastFmClient lfm = new LastFmClient(config.getLastFmClientConfig());
         try {
@@ -82,7 +90,7 @@ public class Orchestrator implements LifecycleListener, Runnable, DeviceAnnounce
         return lfm;
     }
 
-    public static TwitterClient getTwitterClient() throws IOException {
+    public static TwitterClient getTwitterClient() throws IOException, ConfigException {
         logger.info("Starting Twitter bot…");
         TwitterClient twitter = new TwitterClient(config.getTwitterClientConfig());
         try {
@@ -104,8 +112,7 @@ public class Orchestrator implements LifecycleListener, Runnable, DeviceAnnounce
 
     public static CsvLogger getCsvLogger() throws IOException {
         logger.info("Logging the tracklist to {}", config.getCsvLoggerFilename());
-        CsvLogger csvLogger = new CsvLogger(config.getCsvLoggerFilename());
-        return csvLogger;
+        return new CsvLogger(config.getCsvLoggerFilename());
     }
 
     protected LinkedBlockingQueue<SongEvent> songEventQueue;
@@ -119,6 +126,12 @@ public class Orchestrator implements LifecycleListener, Runnable, DeviceAnnounce
         logger.info("💿📀💿📀 https://github.com/ben-xo/cdjscrobbler");
 
         try {
+
+            // deal with items that require authorization first - you don't need a CDJ present
+            // in order to log in to Twitter, for example.
+            final LastFmClient lfm = config.isLfmEnabled() ? getLfmClient() : null;
+            final TwitterClient twitter = config.isTwitterEnabled() ? getTwitterClient() : null;
+
             songEventQueue = new LinkedBlockingQueue<>();
 
             // start two threads with a shared queue
@@ -137,12 +150,12 @@ public class Orchestrator implements LifecycleListener, Runnable, DeviceAnnounce
 //            final ArtworkPopup artworkPopup = new ArtworkPopup();
 //            queueProcessor.addNowPlayingListener(artworkPopup);
 
-            if(config.isCsvLoggerEnabled()) {
+            if (config.isCsvLoggerEnabled()) {
                 CsvLogger csvLogger = getCsvLogger();
                 queueProcessor.addScrobbleListener(csvLogger);
             }
 
-            if(config.isDmcaAccountantEnabled()) {
+            if (config.isDmcaAccountantEnabled()) {
                 final DmcaAccountant dmcaAccountant = getDmcaAccountant();
 
                 // start the on air warning
@@ -151,27 +164,29 @@ public class Orchestrator implements LifecycleListener, Runnable, DeviceAnnounce
                 queueProcessor.addNowPlayingListener(dmcaAccountant);
             }
 
-            if (config.isLfmEnabled()) {
-                final LastFmClient lfm = getLfmClient();
+            if (lfm != null) {
                 queueProcessor.addNowPlayingListener(lfm);
                 queueProcessor.addScrobbleListener(lfm);
             }
 
-            if (config.isTwitterEnabled()) {
-                final TwitterClient twitter = getTwitterClient();
+            if (twitter != null) {
                 queueProcessor.addNowPlayingListener(twitter);
             }
 
             queueProcessor.start(); // this doesn't return until shutdown (or exception)
 
             // TODO: queue processor should probably have its own thread.
-
+        } catch(ConfigException e) {
+            // config exceptions should be user friendly, so we don't print out a stack trace
+            logger.error("\nThere was a problem with the configuration file {}\n{}", confFile, e.getMessage());
+            System.exit(-2);
         } catch(Exception e) {
             e.printStackTrace();
-            System.exit(-1);
+            System.exit(-3);
         }
     }
 
+    @SuppressWarnings("BusyWait")
     private void startVirtualCdj() throws InterruptedException {
         ConnectionManager connectionManager = ConnectionManager.getInstance();
         DeviceFinder deviceFinder = DeviceFinder.getInstance();
@@ -186,7 +201,6 @@ public class Orchestrator implements LifecycleListener, Runnable, DeviceAnnounce
         boolean started;
 
         logger.info("Starting VirtualCDJ…");
-
         started = false;
         do {
             try {
@@ -206,7 +220,6 @@ public class Orchestrator implements LifecycleListener, Runnable, DeviceAnnounce
         deviceFinder.addDeviceAnnouncementListener(this);
 
         logger.info("Starting MetadataFinder…");
-
         started = false;
         do {
             try {
@@ -221,6 +234,7 @@ public class Orchestrator implements LifecycleListener, Runnable, DeviceAnnounce
             }
         } while (!started);
 
+        logger.info("Starting CrateDigger…");
         do {
             try {
                 crateDigger.start();
@@ -229,14 +243,27 @@ public class Orchestrator implements LifecycleListener, Runnable, DeviceAnnounce
                 Thread.sleep(config.getRetryDelay());
             }
         } while(!crateDigger.isRunning());
+
+        if(config.getTwitterClientConfig().getShouldAttachCoverArt()) {
+            logger.info("Starting ArtFinder for tweeting cover art…");
+            ArtFinder artFinder = ArtFinder.getInstance();
+            do {
+                try {
+                    artFinder.start();
+                } catch (Exception e) {
+                    logger.error("ArtFinder error (retrying):", e);
+                    Thread.sleep(config.getRetryDelay());
+                }
+            } while (!artFinder.isRunning());
+        }
     }
 
     /**
      * Looks for a device number <= 4 that we can use for the MetadataFinder.
      * <p>
      * The MetadataFinder only works if it can use the ID of an unused "real" CDJ (1-4 - Rekordbox can use higher IDs)
-     * because it emulates a Pro-Link media browser. This means we either have to pick the ID of a CDJ that's not
-     * present. If you happen to have 4 real CDJs, it will automatically try to "borrow" an ID from one for a lookup -
+     * because it emulates a Pro-Link media browser. This means we have to pick the ID of a CDJ that's not present.
+     * If you happen to have 4 real CDJs, it will automatically try to "borrow" an ID from one for a lookup -
      * but that only works if there is one on the network that is not using Pro-Link right now. (If all 4 are using
      * Pro-Link then sorry - you're out of luck!)
      *
