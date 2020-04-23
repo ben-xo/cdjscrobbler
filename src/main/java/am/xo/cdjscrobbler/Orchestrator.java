@@ -75,46 +75,6 @@ public class Orchestrator implements LifecycleListener, Runnable, DeviceAnnounce
         config = c;
     }
 
-    public static LastFmClient getLfmClient() throws IOException, ConfigException {
-        logger.info("Starting Last.fm Scrobbler…");
-        LastFmClient lfm = new LastFmClient(config.getLastFmClientConfig());
-        try {
-            lfm.ensureUserIsConnected();
-        } catch (CallException e) {
-            if (e.getCause() instanceof UnknownHostException) {
-                logger.warn("** Looks like we're offline. Scrobbling disabled. **");
-            } else {
-                throw e;
-            }
-        }
-        return lfm;
-    }
-
-    public static TwitterClient getTwitterClient() throws IOException, ConfigException {
-        logger.info("Starting Twitter bot…");
-        TwitterClient twitter = new TwitterClient(config.getTwitterClientConfig());
-        try {
-            twitter.ensureUserIsConnected();
-        } catch (OAuthException e) {
-            if (e.getCause() instanceof UnknownHostException) {
-                logger.warn("** Looks like we're offline. Tweeting disabled. **");
-            } else {
-                throw e;
-            }
-        }
-        return twitter;
-    }
-
-    public static DmcaAccountant getDmcaAccountant() throws IOException {
-        logger.info("Starting DMCA Accountant…");
-        return new DmcaAccountant();
-    }
-
-    public static CsvLogger getCsvLogger() throws IOException {
-        logger.info("Logging the tracklist to {}", config.getCsvLoggerFilename());
-        return new CsvLogger(config.getCsvLoggerFilename());
-    }
-
     protected LinkedBlockingQueue<SongEvent> songEventQueue;
     protected UpdateListener updateListener;
     protected QueueProcessor queueProcessor;
@@ -126,6 +86,9 @@ public class Orchestrator implements LifecycleListener, Runnable, DeviceAnnounce
         logger.info("💿📀💿📀 https://github.com/ben-xo/cdjscrobbler");
 
         try {
+
+            // TODO: dealing with authorization for these at this point only makes sense for the CLI flow
+            // maybe want a factory which has gui auth versions?
 
             // deal with items that require authorization first - you don't need a CDJ present
             // in order to log in to Twitter, for example.
@@ -151,26 +114,19 @@ public class Orchestrator implements LifecycleListener, Runnable, DeviceAnnounce
 //            queueProcessor.addNowPlayingListener(artworkPopup);
 
             if (config.isCsvLoggerEnabled()) {
-                CsvLogger csvLogger = getCsvLogger();
-                queueProcessor.addScrobbleListener(csvLogger);
+                startCsvLogger();
             }
 
             if (config.isDmcaAccountantEnabled()) {
-                final DmcaAccountant dmcaAccountant = getDmcaAccountant();
-
-                // start the on air warning
-                dmcaAccountant.start();
-                queueProcessor.addNewSongLoadedListener(dmcaAccountant);
-                queueProcessor.addNowPlayingListener(dmcaAccountant);
+                startDmcaAccountant();
             }
 
-            if (lfm != null) {
-                queueProcessor.addNowPlayingListener(lfm);
-                queueProcessor.addScrobbleListener(lfm);
+            if (config.isLfmEnabled()) {
+                startLastFmClient();
             }
 
-            if (twitter != null) {
-                queueProcessor.addNowPlayingListener(twitter);
+            if (config.isTwitterEnabled()) {
+                startTwitterClient();
             }
 
             queueProcessor.start(); // this doesn't return until shutdown (or exception)
@@ -184,6 +140,123 @@ public class Orchestrator implements LifecycleListener, Runnable, DeviceAnnounce
             e.printStackTrace();
             System.exit(-3);
         }
+    }
+
+    private TwitterClient twitter = null;
+
+    public void startTwitterClient() throws IOException, ConfigException {
+        if(twitter == null) {
+            logger.info("Starting Twitter bot…");
+            twitter = getTwitterClient();
+            queueProcessor.addNowPlayingListener(twitter);
+        }
+    }
+
+    public void stopTwitterClient() throws IOException {
+        if(twitter != null) {
+            logger.info("Stopping Twitter bot…");
+            queueProcessor.removeNowPlayingListener(twitter);
+            twitter = null;
+        }
+    }
+
+    private LastFmClient lfm = null;
+
+    public void startLastFmClient() throws IOException, ConfigException {
+        if(lfm == null) {
+            logger.info("Starting Last.fm Scrobbler…");
+            lfm = getLfmClient();
+            queueProcessor.addNowPlayingListener(lfm);
+            queueProcessor.addScrobbleListener(lfm);
+        }
+    }
+
+    public void stopLastFmClient() throws IOException {
+        if(lfm != null) {
+            logger.info("Stopping Last.fm Scrobbler…");
+            queueProcessor.removeNowPlayingListener(lfm);
+            queueProcessor.removeScrobbleListener(lfm);
+            lfm = null;
+        }
+    }
+
+    private CsvLogger csvLogger = null;
+    public void startCsvLogger() throws IOException {
+        if(csvLogger == null) {
+            logger.info("Logging the tracklist to {}", config.getCsvLoggerFilename());
+            csvLogger = getCsvLogger();
+            queueProcessor.addScrobbleListener(csvLogger);
+        }
+    }
+
+    public void stopCsvLogger() {
+        if(csvLogger != null) {
+            logger.info("Stopped logging tracklist");
+            queueProcessor.removeScrobbleListener(csvLogger);
+            csvLogger = null;
+        }
+    }
+
+    private DmcaAccountant dmcaAccountant = null;
+
+    public void startDmcaAccountant() throws IOException {
+        if(dmcaAccountant == null) {
+            logger.info("Starting DMCA Accountant…");
+            dmcaAccountant = getDmcaAccountant();
+
+            // start the on air warning
+            dmcaAccountant.start();
+            queueProcessor.addNewSongLoadedListener(dmcaAccountant);
+            queueProcessor.addNowPlayingListener(dmcaAccountant);
+        }
+    }
+
+    public void stopDmcaAccountant() {
+        if(dmcaAccountant != null) {
+            logger.info("Stopping DMCA Accountant…");
+
+            // stop the on air warning
+            dmcaAccountant.interrupt();
+            queueProcessor.removeNewSongLoadedListener(dmcaAccountant);
+            queueProcessor.removeNowPlayingListener(dmcaAccountant);
+            dmcaAccountant = null;
+        }
+    }
+
+    public static LastFmClient getLfmClient() throws IOException, ConfigException {
+        LastFmClient lfm = new LastFmClient(config.getLastFmClientConfig());
+        try {
+            lfm.ensureUserIsConnected();
+        } catch (CallException e) {
+            if (e.getCause() instanceof UnknownHostException) {
+                logger.warn("** Looks like we're offline. Scrobbling disabled. **");
+            } else {
+                throw e;
+            }
+        }
+        return lfm;
+    }
+
+    public static TwitterClient getTwitterClient() throws IOException, ConfigException {
+        TwitterClient twitter = new TwitterClient(config.getTwitterClientConfig());
+        try {
+            twitter.ensureUserIsConnected();
+        } catch (OAuthException e) {
+            if (e.getCause() instanceof UnknownHostException) {
+                logger.warn("** Looks like we're offline. Tweeting disabled. **");
+            } else {
+                throw e;
+            }
+        }
+        return twitter;
+    }
+
+    public static DmcaAccountant getDmcaAccountant() throws IOException {
+        return new DmcaAccountant();
+    }
+
+    public static CsvLogger getCsvLogger() throws IOException {
+        return new CsvLogger(config.getCsvLoggerFilename());
     }
 
     @SuppressWarnings("BusyWait")
