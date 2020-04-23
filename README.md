@@ -1,5 +1,5 @@
-CDJ Scrobbler v1.8-SNAPSHOT
----------------------------
+CDJ Scrobbler v1.8
+------------------
 
 ![Java CI with Maven](https://github.com/ben-xo/cdjscrobbler/workflows/Java%20CI%20with%20Maven/badge.svg?branch=develop)
 
@@ -32,21 +32,24 @@ Run
         twitter4j.oauth.consumerSecret=a key that you got from https://developer.twitter.com
         twitter4j.oauth.consumerKey=the secret that goes with that key
 
-* Finally, run it in Terminal or Command Prompt:
+* Finally double click `cdjscrobbler-1.8.jar`
+
+If you want to run it from the Terminal (e.g. from a Raspberry Pi)
 
 
-        java -jar cdjscrobbler-1.8-SNAPSHOT.jar --twitter --lfm
+        java -jar cdjscrobbler-1.8.jar --twitter --lfm
 
 * If this is the first time you have run CDJ Scrobbler, you will be prompted to authorize Last.fm and Twitter in turn. The authorization secrets will be saved into the file `cdjscrobbler.properties` in your home directory. (If you want to use a different file, use the `--conf` option)
 * For more information on the options,
 
 
-        java -jar cdjscrobbler-1.8-SNAPSHOT.jar --help
+        java -jar cdjscrobbler-1.8.jar --help
 
 
 Options
 -------
 
+        --no-gui              Disable Graphical User Interface
     -L, --lfm                 Enable Last.fm scrobbling
     -T, --twitter             Enable tweeting the tracklist
         --twitter-cover-art   Enable tweeting cover art with each tweet
