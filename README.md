@@ -1,5 +1,7 @@
-CDJ Scrobbler v1.7.1
---------------------
+CDJ Scrobbler v1.8-SNAPSHOT
+---------------------------
+
+![Java CI with Maven](https://github.com/ben-xo/cdjscrobbler/workflows/Java%20CI%20with%20Maven/badge.svg?branch=develop)
 
 CDJ Scrobbler is a Last.fm Scrobbler for Pioneer CDJ / XDJ (e.g. CDJ 2000) based on beat-link.
 
@@ -33,13 +35,13 @@ Run
 * Finally, run it in Terminal or Command Prompt:
 
 
-        java -jar cdjscrobbler-1.7.1.jar --twitter --lfm
+        java -jar cdjscrobbler-1.8-SNAPSHOT.jar --twitter --lfm
 
 * If this is the first time you have run CDJ Scrobbler, you will be prompted to authorize Last.fm and Twitter in turn. The authorization secrets will be saved into the file `cdjscrobbler.properties` in your home directory. (If you want to use a different file, use the `--conf` option)
 * For more information on the options,
 
 
-        java -jar cdjscrobbler-1.7.1.jar --help
+        java -jar cdjscrobbler-1.8-SNAPSHOT.jar --help
 
 
 Options

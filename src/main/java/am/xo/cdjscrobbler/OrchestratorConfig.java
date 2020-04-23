@@ -41,6 +41,7 @@ public class OrchestratorConfig {
     private String csvLoggerFilename;
 
     private int retryDelay; // override with setting cdjscrobbler.retryDelayMs
+    private boolean isGui = false;
 
     public OrchestratorConfig setFromProperties(CDJScrobblerConfig c) {
         this.config = c;
@@ -49,6 +50,10 @@ public class OrchestratorConfig {
         twitterEnabled = Boolean.parseBoolean(c.getProperty("cdjscrobbler.enable.twitter", "false"));
         version = config.getProperty("cdjscrobbler.version", "");
         return this;
+    }
+
+    public void setIsGui(boolean isGui) {
+        this.isGui = isGui;
     }
 
     public boolean isDmcaAccountantEnabled() {
@@ -109,6 +114,10 @@ public class OrchestratorConfig {
 
     public String getVersion() {
         return version;
+    }
+
+    public boolean isGui() {
+        return isGui;
     }
 
 }

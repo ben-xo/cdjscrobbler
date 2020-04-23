@@ -33,6 +33,7 @@ import org.slf4j.bridge.SLF4JBridgeHandler;
 import picocli.CommandLine;
 import picocli.CommandLine.Option;
 
+import java.awt.*;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.NoSuchFileException;
@@ -73,6 +74,9 @@ public class CDJScrobbler implements Runnable {
     static final OrchestratorConfig oconfig = new OrchestratorConfig();
 
     static final CDJScrobbler theApplication = new CDJScrobbler();
+
+    @Option(names = {"--no-gui"}, description = "Disable Graphical User Interface")
+    static boolean noGui = false;
 
     @Option(names = {"-L", "--lfm"}, description = "Enable Last.fm scrobbling")
     static boolean lfmEnabled = false;
@@ -207,7 +211,17 @@ public class CDJScrobbler implements Runnable {
             oconfig.setCsvLoggerFilename(csvLogFile);
         }
 
+        // TODO: this is where we take configuration options from the GUI
+
         Orchestrator o = new Orchestrator(oconfig);
+        if(!noGui && !GraphicsEnvironment.isHeadless()) {
+            oconfig.setIsGui(true);
+            EventQueue.invokeLater(() -> {
+                CDJScrobblerGui gui = new CDJScrobblerGui(o);
+                o.addCDJScrobblerReadyListener(gui);
+                gui.setVisible(true);
+            });
+        }
         o.run();
     }
 
