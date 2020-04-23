@@ -76,7 +76,7 @@ public class OnAirWarning extends Thread {
                 Thread.sleep(250);
             }
         } catch(Exception e) {
-            logger.warn("Interrupted");
+            logger.warn("stopped");
         }
     }
 }
