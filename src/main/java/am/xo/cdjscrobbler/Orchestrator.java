@@ -48,6 +48,8 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.net.UnknownHostException;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.LinkedBlockingQueue;
 
 import static am.xo.cdjscrobbler.CDJScrobbler.confFile;
@@ -79,6 +81,10 @@ public class Orchestrator implements LifecycleListener, Runnable, DeviceAnnounce
     protected UpdateListener updateListener;
     protected QueueProcessor queueProcessor;
 
+    public OrchestratorConfig getConfig() {
+        return config;
+    }
+
     @Override
     public void run() {
 
@@ -92,10 +98,11 @@ public class Orchestrator implements LifecycleListener, Runnable, DeviceAnnounce
 
             // deal with items that require authorization first - you don't need a CDJ present
             // in order to log in to Twitter, for example.
-            final LastFmClient lfm = config.isLfmEnabled() ? getLfmClient() : null;
-            final TwitterClient twitter = config.isTwitterEnabled() ? getTwitterClient() : null;
+            final LastFmClient lfm = isLfmEnabled() ? getLfmClient() : null;
+            final TwitterClient twitter = isTwitterEnabled() ? getTwitterClient() : null;
 
             songEventQueue = new LinkedBlockingQueue<>();
+            queueProcessor = new QueueProcessor(songEventQueue);
 
             // start two threads with a shared queue
             // TODO: dynamically add and remove UpdateListeners as devices are announced
@@ -107,25 +114,24 @@ public class Orchestrator implements LifecycleListener, Runnable, DeviceAnnounce
 
 
             logger.info("Starting QueueProcessor…");
-            queueProcessor = new QueueProcessor(songEventQueue);
 
             // this must happen after startVirtualCdj() because ArtFinder starts MetadataFinder
 //            final ArtworkPopup artworkPopup = new ArtworkPopup();
 //            queueProcessor.addNowPlayingListener(artworkPopup);
 
-            if (config.isCsvLoggerEnabled()) {
+            if (isCsvLoggerEnabled()) {
                 startCsvLogger();
             }
 
-            if (config.isDmcaAccountantEnabled()) {
+            if (isDmcaAccountantEnabled()) {
                 startDmcaAccountant();
             }
 
-            if (config.isLfmEnabled()) {
+            if (isLfmEnabled()) {
                 startLastFmClient();
             }
 
-            if (config.isTwitterEnabled()) {
+            if (isTwitterEnabled()) {
                 startTwitterClient();
             }
 
@@ -140,6 +146,22 @@ public class Orchestrator implements LifecycleListener, Runnable, DeviceAnnounce
             e.printStackTrace();
             System.exit(-3);
         }
+    }
+
+    public boolean isLfmEnabled() {
+        return config.isLfmEnabled();
+    }
+
+    public boolean isTwitterEnabled() {
+        return config.isTwitterEnabled();
+    }
+
+    public boolean isDmcaAccountantEnabled() {
+        return config.isDmcaAccountantEnabled();
+    }
+
+    public boolean isCsvLoggerEnabled() {
+        return config.isCsvLoggerEnabled();
     }
 
     private TwitterClient twitter = null;
@@ -327,6 +349,13 @@ public class Orchestrator implements LifecycleListener, Runnable, DeviceAnnounce
                 Thread.sleep(config.getRetryDelay());
             }
         } while (!artFinder.isRunning());
+
+        cdjScrobblerReadyListeners.forEach((listener) -> listener.cdjScrobblerReady());
+    }
+
+    private final List<CDJScrobblerReadyListener> cdjScrobblerReadyListeners = new ArrayList<>();
+    public void addCDJScrobblerReadyListener(CDJScrobblerReadyListener l) {
+        cdjScrobblerReadyListeners.add(l);
     }
 
     /**
