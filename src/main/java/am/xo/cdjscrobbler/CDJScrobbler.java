@@ -178,6 +178,8 @@ public class CDJScrobbler implements Runnable {
 
         oconfig.setFromProperties(config);
 
+        // TODO: check if we wanted a GUI, and set it up
+
         // saved configuration is overridden by command line configuration
 
         // --lfm
@@ -206,6 +208,8 @@ public class CDJScrobbler implements Runnable {
             oconfig.setCsvLoggerEnabled(true);
             oconfig.setCsvLoggerFilename(csvLogFile);
         }
+
+        // TODO: this is where we take configuration options from the GUI
 
         Orchestrator o = new Orchestrator(oconfig);
         o.run();
