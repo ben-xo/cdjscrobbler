@@ -266,6 +266,7 @@ public class Orchestrator implements LifecycleListener, Runnable, DeviceAnnounce
         VirtualCdj virtualCdj = VirtualCdj.getInstance();
         MetadataFinder metadataFinder = MetadataFinder.getInstance();
         CrateDigger crateDigger = CrateDigger.getInstance();
+        ArtFinder artFinder = ArtFinder.getInstance();
 
         // default is 10s, which is quite high when recovering from a network outage
         connectionManager.setSocketTimeout(3000);
@@ -317,18 +318,15 @@ public class Orchestrator implements LifecycleListener, Runnable, DeviceAnnounce
             }
         } while(!crateDigger.isRunning());
 
-        if(config.getTwitterClientConfig().getShouldAttachCoverArt()) {
-            logger.info("Starting ArtFinder for tweeting cover art…");
-            ArtFinder artFinder = ArtFinder.getInstance();
-            do {
-                try {
-                    artFinder.start();
-                } catch (Exception e) {
-                    logger.error("ArtFinder error (retrying):", e);
-                    Thread.sleep(config.getRetryDelay());
-                }
-            } while (!artFinder.isRunning());
-        }
+        logger.info("Starting ArtFinder for tweeting cover art…");
+        do {
+            try {
+                artFinder.start();
+            } catch (Exception e) {
+                logger.error("ArtFinder error (retrying):", e);
+                Thread.sleep(config.getRetryDelay());
+            }
+        } while (!artFinder.isRunning());
     }
 
     /**
