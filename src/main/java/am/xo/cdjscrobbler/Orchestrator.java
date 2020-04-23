@@ -30,7 +30,11 @@ package am.xo.cdjscrobbler;
 import am.xo.cdjscrobbler.Plugins.CsvLogger;
 import am.xo.cdjscrobbler.Plugins.DmcaAccountant;
 import am.xo.cdjscrobbler.Plugins.LastFmClient;
+import am.xo.cdjscrobbler.Plugins.LastFmClientConfig;
+import am.xo.cdjscrobbler.Plugins.LastFmGuiClient;
 import am.xo.cdjscrobbler.Plugins.TwitterClient;
+import am.xo.cdjscrobbler.Plugins.TwitterClientConfig;
+import am.xo.cdjscrobbler.Plugins.TwitterGuiClient;
 import com.github.scribejava.core.exceptions.OAuthException;
 import de.umass.lastfm.CallException;
 import org.deepsymmetry.beatlink.DeviceAnnouncement;
@@ -246,7 +250,7 @@ public class Orchestrator implements LifecycleListener, Runnable, DeviceAnnounce
     }
 
     public static LastFmClient getLfmClient() throws IOException, ConfigException {
-        LastFmClient lfm = new LastFmClient(config.getLastFmClientConfig());
+        LastFmClient lfm = getLastFmClientImpl(config.getLastFmClientConfig());
         try {
             lfm.ensureUserIsConnected();
         } catch (CallException e) {
@@ -260,7 +264,7 @@ public class Orchestrator implements LifecycleListener, Runnable, DeviceAnnounce
     }
 
     public static TwitterClient getTwitterClient() throws IOException, ConfigException {
-        TwitterClient twitter = new TwitterClient(config.getTwitterClientConfig());
+        TwitterClient twitter = getTwitterClientImpl(config.getTwitterClientConfig());
         try {
             twitter.ensureUserIsConnected();
         } catch (OAuthException e) {
@@ -271,6 +275,20 @@ public class Orchestrator implements LifecycleListener, Runnable, DeviceAnnounce
             }
         }
         return twitter;
+    }
+
+    private static TwitterClient getTwitterClientImpl(TwitterClientConfig twitterClientConfig) {
+        if(config.isGui()) {
+            return new TwitterGuiClient(twitterClientConfig);
+        }
+        return new TwitterClient(twitterClientConfig);
+    }
+
+    private static LastFmClient getLastFmClientImpl(LastFmClientConfig lastFmClientConfig) {
+        if(config.isGui()) {
+            return new LastFmGuiClient(lastFmClientConfig);
+        }
+        return new LastFmClient(lastFmClientConfig);
     }
 
     public static DmcaAccountant getDmcaAccountant() throws IOException {
