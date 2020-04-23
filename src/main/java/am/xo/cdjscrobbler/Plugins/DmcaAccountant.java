@@ -57,6 +57,10 @@ public class DmcaAccountant implements NowPlayingListener, NewSongLoadedListener
         warning.start();
     }
 
+    public void interrupt() {
+        warning.interrupt();
+    }
+
     @Override
     public void newSongLoaded(NewSongLoadedEvent event) {
         if(!checkIsSafeToPlay(event.model.getSong())) {

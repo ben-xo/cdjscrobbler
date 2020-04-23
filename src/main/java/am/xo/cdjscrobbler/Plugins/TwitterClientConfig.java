@@ -68,6 +68,10 @@ public class TwitterClientConfig {
         return Boolean.parseBoolean(config.getProperty("cdjscrobbler.tweet.attachcoverart", "false"));
     }
 
+    public void setShouldAttachCoverArt(boolean b) {
+        config.setProperty("cdjscrobbler.tweet.attachcoverart", Boolean.toString(b));
+    }
+
     public void assertConfigured() throws ConfigException {
         if (getOAuthConsumerKey().isEmpty() || getOAuthConsumerSecret().isEmpty()) {
             String msg = "You need to put a Twitter OAuth key and secret into your config. Expected properties:"

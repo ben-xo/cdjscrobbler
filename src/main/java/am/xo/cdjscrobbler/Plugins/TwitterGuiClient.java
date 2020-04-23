@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, Ben XO.
+ * Copyright (c) 2020, Ben XO.
  * All rights reserved.
  *
  * Redistribution and use of this software in source and binary forms, with or without modification, are
@@ -27,45 +27,39 @@
 
 package am.xo.cdjscrobbler.Plugins;
 
-import am.xo.cdjscrobbler.SongEventListeners.NowPlayingListener;
-import am.xo.cdjscrobbler.SongEvents.NowPlayingEvent;
-import org.deepsymmetry.beatlink.data.AlbumArt;
-import org.deepsymmetry.beatlink.data.ArtFinder;
+import com.github.scribejava.core.model.OAuth1AccessToken;
+import com.github.scribejava.core.model.OAuth1RequestToken;
+import com.github.scribejava.core.oauth.OAuth10aService;
 
-import javax.swing.ImageIcon;
-import javax.swing.JFrame;
-import javax.swing.JLabel;
-import javax.swing.SwingUtilities;
-import java.awt.BorderLayout;
-import java.awt.image.BufferedImage;
+import javax.swing.*;
+import java.awt.*;
+import java.io.IOException;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.util.concurrent.ExecutionException;
 
-public class ArtworkPopup implements NowPlayingListener {
+public class TwitterGuiClient extends TwitterClient {
 
-    JFrame editorFrame = new JFrame("Image Demo");
-    JLabel jLabel = new JLabel();
-
-    public ArtworkPopup() throws Exception {
-        editorFrame.getContentPane().add(jLabel, BorderLayout.CENTER);
-        ArtFinder.getInstance().start();
+    public TwitterGuiClient(TwitterClientConfig config) {
+        super(config);
     }
 
     @Override
-    public void nowPlaying(NowPlayingEvent event) {
-        SwingUtilities.invokeLater(() -> {
-            AlbumArt art = ArtFinder.getInstance().getLatestArtFor(event.cdjStatus);
-            if(art == null) {
-                editorFrame.setVisible(false);
-            } else {
-                BufferedImage image = art.getImage();
+    protected OAuth1AccessToken authorize() throws IOException, InterruptedException, ExecutionException {
 
-                ImageIcon currentImage = new ImageIcon(image);
-                jLabel.setIcon(currentImage);
-                jLabel.setSize(jLabel.getWidth() * 3, jLabel.getHeight() * 3);
-
-                editorFrame.pack();
-                editorFrame.setLocationRelativeTo(null);
-                editorFrame.setVisible(true);
+        final OAuth10aService service = getTwitterOAuthService();
+        final OAuth1RequestToken requestToken = service.getRequestToken();
+        String authUrl = service.getAuthorizationUrl(requestToken);
+        if (Desktop.isDesktopSupported() && Desktop.getDesktop().isSupported(Desktop.Action.BROWSE)) {
+            try {
+                Desktop.getDesktop().browse(new URI(authUrl));
+            } catch (URISyntaxException e) {
+                e.printStackTrace();
             }
-        });
+        }
+        JFrame frame = new JFrame("Twitter Authentication");
+        final String oauthVerifier = JOptionPane.showInputDialog(frame, "Enter the PIN shown by Twitter");
+        final OAuth1AccessToken accessToken = service.getAccessToken(requestToken, oauthVerifier);
+        return accessToken;
     }
 }
