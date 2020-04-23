@@ -75,8 +75,8 @@ public class CDJScrobbler implements Runnable {
 
     static final CDJScrobbler theApplication = new CDJScrobbler();
 
-    @Option(names = {"--gui"}, description = "Enable Graphical User Interface")
-    static boolean withGui = false;
+    @Option(names = {"--no-gui"}, description = "Disable Graphical User Interface")
+    static boolean noGui = false;
 
     @Option(names = {"-L", "--lfm"}, description = "Enable Last.fm scrobbling")
     static boolean lfmEnabled = false;
@@ -214,7 +214,7 @@ public class CDJScrobbler implements Runnable {
         // TODO: this is where we take configuration options from the GUI
 
         Orchestrator o = new Orchestrator(oconfig);
-        if(withGui) {
+        if(!noGui && !GraphicsEnvironment.isHeadless()) {
             oconfig.setIsGui(true);
             EventQueue.invokeLater(() -> {
                 CDJScrobblerGui gui = new CDJScrobblerGui(o);
