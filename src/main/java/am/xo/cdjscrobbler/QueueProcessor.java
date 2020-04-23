@@ -27,12 +27,19 @@
 
 package am.xo.cdjscrobbler;
 
-import am.xo.cdjscrobbler.SongEventListeners.*;
-import am.xo.cdjscrobbler.SongEvents.*;
+import am.xo.cdjscrobbler.SongEventListeners.NewSongLoadedListener;
+import am.xo.cdjscrobbler.SongEventListeners.NowPlayingListener;
+import am.xo.cdjscrobbler.SongEventListeners.ScrobbleListener;
+import am.xo.cdjscrobbler.SongEvents.NewSongLoadedEvent;
+import am.xo.cdjscrobbler.SongEvents.NowPlayingEvent;
+import am.xo.cdjscrobbler.SongEvents.ResetEvent;
+import am.xo.cdjscrobbler.SongEvents.ScrobbleEvent;
+import am.xo.cdjscrobbler.SongEvents.TransitionEvent;
 import org.deepsymmetry.beatlink.data.MetadataFinder;
 import org.deepsymmetry.beatlink.data.TrackMetadata;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.slf4j.helpers.MessageFormatter;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -72,7 +79,7 @@ public class QueueProcessor implements SongEventVisitor {
     public void start() throws InterruptedException {
         while(true) {
             SongEvent songEvent = songEventQueue.take(); // this blocks until an event is ready.
-            logger.info("Received event {}", songEvent);
+            info("Received event {}", songEvent);
 
             // Visitor pattern. Go visit the event, to have it call back to the right handler on this class.
             // (One wonders if it's worth it, just to avoid smelly "instanceof")
@@ -88,7 +95,8 @@ public class QueueProcessor implements SongEventVisitor {
             // The next state, Scrobbling, depends on knowing the song length, so if we can't get this here
             // then the song will remain anonymous and will never scrobble or tweet.
             TrackMetadata metadata = MetadataFinder.getInstance().requestMetadataFrom(event.cdjStatus);
-            logger.info("Song: {}", metadata);
+            info("Song: {} - {}", metadata.getArtist().label, metadata.getTitle());
+            logger.debug(metadata.toString());
 
             if (metadata != null) {
                 // save it back to the model so it can be used to determine the scrobble point
@@ -120,7 +128,8 @@ public class QueueProcessor implements SongEventVisitor {
     public void visit(NewSongLoadedEvent event) {
         // First attempt to look up the song length. Opportunity for an early warning that you shouldn't play the song.
         TrackMetadata metadata = MetadataFinder.getInstance().requestMetadataFrom(event.cdjStatus);
-        logger.info("Song: {}", metadata);
+        info("Song: {} - {}", metadata.getArtist().label, metadata.getTitle());
+        logger.debug(metadata.toString());
 
         if(metadata != null) {
             // save it back to the model so it can be used to determine the scrobble point
@@ -152,5 +161,31 @@ public class QueueProcessor implements SongEventVisitor {
     }
     public void removeScrobbleListener(ScrobbleListener l) {
         scrobbleListeners.remove(l);
+    }
+
+    private final List<OrchestratorListener> orchestratorListeners = new ArrayList<>();
+    public void addMessageListener(OrchestratorListener l) {
+        orchestratorListeners.add(l);
+    }
+
+    protected void info(String m, Object... args) {
+        logger.info(m, args);
+        orchestratorListeners.forEach((listener) -> listener.cdjScrobblerMessage(
+                MessageFormatter.arrayFormat(m, args).getMessage()
+        ));
+    }
+
+    public void warn(String m, Object... args) {
+        logger.warn(m, args);
+        orchestratorListeners.forEach((listener) -> listener.cdjScrobblerMessage(
+                MessageFormatter.arrayFormat(m, args).getMessage()
+        ));
+    }
+
+    protected void error(String m, Object... args) {
+        logger.error(m, args);
+        orchestratorListeners.forEach((listener) -> listener.cdjScrobblerMessage(
+                MessageFormatter.arrayFormat(m, args).getMessage()
+        ));
     }
 }

@@ -27,6 +27,6 @@
 
 package am.xo.cdjscrobbler;
 
-public interface CDJScrobblerReadyListener {
-    void cdjScrobblerReady();
+public interface OrchestratorListener {
+    void cdjScrobblerMessage(String message);
 }

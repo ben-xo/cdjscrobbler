@@ -34,7 +34,7 @@ import javax.swing.*;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 
-public class CDJScrobblerGui extends JFrame implements CDJScrobblerReadyListener {
+public class CDJScrobblerGui extends JFrame implements OrchestratorListener {
     static final Logger logger = LoggerFactory.getLogger(CDJScrobblerGui.class);
 
     private final Orchestrator o;
@@ -119,8 +119,8 @@ public class CDJScrobblerGui extends JFrame implements CDJScrobblerReadyListener
     }
 
     @Override
-    public void cdjScrobblerReady() {
-        readyLabel.setText("CDJ Scrobbler Ready");
+    public void cdjScrobblerMessage(String message) {
+        readyLabel.setText(message);
     }
 
     private class LfmCheckBoxAction extends AbstractAction {

@@ -49,6 +49,7 @@ import org.deepsymmetry.beatlink.data.MetadataFinder;
 import org.deepsymmetry.beatlink.dbserver.ConnectionManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.slf4j.helpers.MessageFormatter;
 
 import java.io.IOException;
 import java.net.UnknownHostException;
@@ -92,8 +93,8 @@ public class Orchestrator implements LifecycleListener, Runnable, DeviceAnnounce
     @Override
     public void run() {
 
-        logger.info("💿📀💿📀 CDJ Scrobbler v{} by Ben XO", config.getVersion());
-        logger.info("💿📀💿📀 https://github.com/ben-xo/cdjscrobbler");
+        info("💿📀💿📀 CDJ Scrobbler v{} by Ben XO", config.getVersion());
+        info("💿📀💿📀 https://github.com/ben-xo/cdjscrobbler");
 
         try {
 
@@ -110,14 +111,14 @@ public class Orchestrator implements LifecycleListener, Runnable, DeviceAnnounce
 
             // start two threads with a shared queue
             // TODO: dynamically add and remove UpdateListeners as devices are announced
-            logger.info("Starting UpdateListener…");
+            info("Starting UpdateListener…");
             updateListener = new UpdateListener(songEventQueue);
             VirtualCdj.getInstance().addUpdateListener(updateListener);
 
             startVirtualCdj();
 
 
-            logger.info("Starting QueueProcessor…");
+            info("Starting QueueProcessor…");
 
             // this must happen after startVirtualCdj() because ArtFinder starts MetadataFinder
 //            final ArtworkPopup artworkPopup = new ArtworkPopup();
@@ -139,12 +140,14 @@ public class Orchestrator implements LifecycleListener, Runnable, DeviceAnnounce
                 startTwitterClient();
             }
 
+            info("CDJ Scrobbler ready!");
+
             queueProcessor.start(); // this doesn't return until shutdown (or exception)
 
             // TODO: queue processor should probably have its own thread.
         } catch(ConfigException e) {
             // config exceptions should be user friendly, so we don't print out a stack trace
-            logger.error("\nThere was a problem with the configuration file {}\n{}", confFile, e.getMessage());
+            error("\nThere was a problem with the configuration file {}\n{}", confFile, e.getMessage());
             System.exit(-2);
         } catch(Exception e) {
             e.printStackTrace();
@@ -172,7 +175,7 @@ public class Orchestrator implements LifecycleListener, Runnable, DeviceAnnounce
 
     public void startTwitterClient() throws IOException, ConfigException {
         if(twitter == null) {
-            logger.info("Starting Twitter bot…");
+            info("Starting Twitter bot…");
             twitter = getTwitterClient();
             queueProcessor.addNowPlayingListener(twitter);
         }
@@ -180,7 +183,7 @@ public class Orchestrator implements LifecycleListener, Runnable, DeviceAnnounce
 
     public void stopTwitterClient() throws IOException {
         if(twitter != null) {
-            logger.info("Stopping Twitter bot…");
+            info("Stopping Twitter bot…");
             queueProcessor.removeNowPlayingListener(twitter);
             twitter = null;
         }
@@ -190,7 +193,7 @@ public class Orchestrator implements LifecycleListener, Runnable, DeviceAnnounce
 
     public void startLastFmClient() throws IOException, ConfigException {
         if(lfm == null) {
-            logger.info("Starting Last.fm Scrobbler…");
+            info("Starting Last.fm Scrobbler…");
             lfm = getLfmClient();
             queueProcessor.addNowPlayingListener(lfm);
             queueProcessor.addScrobbleListener(lfm);
@@ -199,7 +202,7 @@ public class Orchestrator implements LifecycleListener, Runnable, DeviceAnnounce
 
     public void stopLastFmClient() throws IOException {
         if(lfm != null) {
-            logger.info("Stopping Last.fm Scrobbler…");
+            info("Stopping Last.fm Scrobbler…");
             queueProcessor.removeNowPlayingListener(lfm);
             queueProcessor.removeScrobbleListener(lfm);
             lfm = null;
@@ -209,7 +212,7 @@ public class Orchestrator implements LifecycleListener, Runnable, DeviceAnnounce
     private CsvLogger csvLogger = null;
     public void startCsvLogger() throws IOException {
         if(csvLogger == null) {
-            logger.info("Logging the tracklist to {}", config.getCsvLoggerFilename());
+            info("Logging the tracklist to {}", config.getCsvLoggerFilename());
             csvLogger = getCsvLogger();
             queueProcessor.addScrobbleListener(csvLogger);
         }
@@ -217,7 +220,7 @@ public class Orchestrator implements LifecycleListener, Runnable, DeviceAnnounce
 
     public void stopCsvLogger() {
         if(csvLogger != null) {
-            logger.info("Stopped logging tracklist");
+            info("Stopped logging tracklist");
             queueProcessor.removeScrobbleListener(csvLogger);
             csvLogger = null;
         }
@@ -227,7 +230,7 @@ public class Orchestrator implements LifecycleListener, Runnable, DeviceAnnounce
 
     public void startDmcaAccountant() throws IOException {
         if(dmcaAccountant == null) {
-            logger.info("Starting DMCA Accountant…");
+            info("Starting DMCA Accountant…");
             dmcaAccountant = getDmcaAccountant();
 
             // start the on air warning
@@ -239,7 +242,7 @@ public class Orchestrator implements LifecycleListener, Runnable, DeviceAnnounce
 
     public void stopDmcaAccountant() {
         if(dmcaAccountant != null) {
-            logger.info("Stopping DMCA Accountant…");
+            info("Stopping DMCA Accountant…");
 
             // stop the on air warning
             dmcaAccountant.interrupt();
@@ -249,13 +252,13 @@ public class Orchestrator implements LifecycleListener, Runnable, DeviceAnnounce
         }
     }
 
-    public static LastFmClient getLfmClient() throws IOException, ConfigException {
+    public LastFmClient getLfmClient() throws IOException, ConfigException {
         LastFmClient lfm = getLastFmClientImpl(config.getLastFmClientConfig());
         try {
             lfm.ensureUserIsConnected();
         } catch (CallException e) {
             if (e.getCause() instanceof UnknownHostException) {
-                logger.warn("** Looks like we're offline. Scrobbling disabled. **");
+                warn("** Looks like we're offline. Scrobbling disabled. **");
             } else {
                 throw e;
             }
@@ -263,13 +266,13 @@ public class Orchestrator implements LifecycleListener, Runnable, DeviceAnnounce
         return lfm;
     }
 
-    public static TwitterClient getTwitterClient() throws IOException, ConfigException {
+    public TwitterClient getTwitterClient() throws IOException, ConfigException {
         TwitterClient twitter = getTwitterClientImpl(config.getTwitterClientConfig());
         try {
             twitter.ensureUserIsConnected();
         } catch (OAuthException e) {
             if (e.getCause() instanceof UnknownHostException) {
-                logger.warn("** Looks like we're offline. Tweeting disabled. **");
+                warn("** Looks like we're offline. Tweeting disabled. **");
             } else {
                 throw e;
             }
@@ -291,11 +294,11 @@ public class Orchestrator implements LifecycleListener, Runnable, DeviceAnnounce
         return new LastFmClient(lastFmClientConfig);
     }
 
-    public static DmcaAccountant getDmcaAccountant() throws IOException {
+    public static DmcaAccountant getDmcaAccountant() {
         return new DmcaAccountant();
     }
 
-    public static CsvLogger getCsvLogger() throws IOException {
+    public static CsvLogger getCsvLogger() {
         return new CsvLogger(config.getCsvLoggerFilename());
     }
 
@@ -314,17 +317,17 @@ public class Orchestrator implements LifecycleListener, Runnable, DeviceAnnounce
 
         boolean started;
 
-        logger.info("Starting VirtualCDJ…");
+        info("Starting VirtualCDJ…");
         started = false;
         do {
             try {
                 started = virtualCdj.start();
                 oldDeviceNumber = virtualCdj.getDeviceNumber();
             } catch (Exception e) {
-                logger.warn("Failed to start.", e);
+                warn("Failed to start VirtualCdj.", e);
             }
             if (!started) {
-                logger.info("Retrying VirtualCdj…");
+                info("Retrying VirtualCdj … (close RekordBox?)");
                 Thread.sleep(config.getRetryDelay());
             }
         } while (!started);
@@ -333,48 +336,69 @@ public class Orchestrator implements LifecycleListener, Runnable, DeviceAnnounce
         updateVirtualCdjNumber();
         deviceFinder.addDeviceAnnouncementListener(this);
 
-        logger.info("Starting MetadataFinder…");
+        info("Starting MetadataFinder…");
         started = false;
         do {
             try {
                 metadataFinder.start();
                 started = metadataFinder.isRunning();
             } catch (Exception e) {
-                logger.warn("Failed to start.", e);
+                warn("Failed to start MetadataFinder.", e);
             }
             if (!started) {
-                logger.info("Retrying MetadataFinder…");
+                info("Retrying MetadataFinder…");
                 Thread.sleep(config.getRetryDelay());
             }
         } while (!started);
 
-        logger.info("Starting CrateDigger…");
+        info("Starting CrateDigger…");
         do {
             try {
                 crateDigger.start();
             } catch(Exception e) {
-                logger.error("CrateDigger error (retrying):", e);
+                error("CrateDigger error (retrying):", e);
                 Thread.sleep(config.getRetryDelay());
             }
         } while(!crateDigger.isRunning());
 
-        logger.info("Starting ArtFinder for tweeting cover art…");
+        info("Starting ArtFinder for tweeting cover art…");
         do {
             try {
                 artFinder.start();
             } catch (Exception e) {
-                logger.error("ArtFinder error (retrying):", e);
+                error("ArtFinder error (retrying):", e);
                 Thread.sleep(config.getRetryDelay());
             }
         } while (!artFinder.isRunning());
-
-        cdjScrobblerReadyListeners.forEach((listener) -> listener.cdjScrobblerReady());
     }
 
-    private final List<CDJScrobblerReadyListener> cdjScrobblerReadyListeners = new ArrayList<>();
-    public void addCDJScrobblerReadyListener(CDJScrobblerReadyListener l) {
-        cdjScrobblerReadyListeners.add(l);
+    private final List<OrchestratorListener> orchestratorListeners = new ArrayList<>();
+    public void addMessageListener(OrchestratorListener l) {
+        orchestratorListeners.add(l);
+        queueProcessor.addMessageListener(l);
     }
+
+    protected void info(String m, Object... args) {
+        logger.info(m, args);
+        orchestratorListeners.forEach((listener) -> listener.cdjScrobblerMessage(
+                MessageFormatter.arrayFormat(m, args).getMessage()
+        ));
+    }
+
+    public void warn(String m, Object... args) {
+        logger.warn(m, args);
+        orchestratorListeners.forEach((listener) -> listener.cdjScrobblerMessage(
+                MessageFormatter.arrayFormat(m, args).getMessage()
+        ));
+    }
+
+    protected void error(String m, Object... args) {
+        logger.error(m, args);
+        orchestratorListeners.forEach((listener) -> listener.cdjScrobblerMessage(
+                MessageFormatter.arrayFormat(m, args).getMessage()
+        ));
+    }
+
 
     /**
      * Looks for a device number <= 4 that we can use for the MetadataFinder.
@@ -412,7 +436,7 @@ public class Orchestrator implements LifecycleListener, Runnable, DeviceAnnounce
 
     @Override
     public void stopped(LifecycleParticipant sender) {
-        logger.info("Attempting to restart because {} stopped", sender);
+        info("Attempting to restart because {} stopped", sender);
         try {
             startVirtualCdj();
         } catch (InterruptedException e) {
@@ -439,9 +463,9 @@ public class Orchestrator implements LifecycleListener, Runnable, DeviceAnnounce
             try {
                 byte newDeviceNumber = getFreeLowDeviceNumber();
                 VirtualCdj.getInstance().setDeviceNumber(newDeviceNumber);
-                logger.info("Set virtual CDJ device number to {}", newDeviceNumber);
+                info("Set virtual CDJ device number to {}", newDeviceNumber);
             } catch (IllegalStateException e) {
-                logger.error("only 1 device no free devices?");
+                error("only 1 device no free devices?");
             }
         } else {
             VirtualCdj.getInstance().setDeviceNumber(oldDeviceNumber);
