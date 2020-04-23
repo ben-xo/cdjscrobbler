@@ -218,7 +218,7 @@ public class CDJScrobbler implements Runnable {
             oconfig.setIsGui(true);
             EventQueue.invokeLater(() -> {
                 CDJScrobblerGui gui = new CDJScrobblerGui(o);
-                o.addCDJScrobblerReadyListener(gui);
+                o.addMessageListener(gui);
                 gui.setVisible(true);
             });
         }
