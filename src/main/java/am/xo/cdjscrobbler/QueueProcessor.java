@@ -135,12 +135,22 @@ public class QueueProcessor implements SongEventVisitor {
     public void addNewSongLoadedListener(NewSongLoadedListener l) {
         newSongLoadedListeners.add(l);
     }
+    public void removeNewSongLoadedListener(NewSongLoadedListener l) {
+        newSongLoadedListeners.remove(l);
+    }
 
     public void addNowPlayingListener(NowPlayingListener l) {
         nowPlayingListeners.add(l);
     }
 
+    public void removeNowPlayingListener(NowPlayingListener l) {
+        nowPlayingListeners.remove(l);
+    }
+
     public void addScrobbleListener(ScrobbleListener l) {
         scrobbleListeners.add(l);
+    }
+    public void removeScrobbleListener(ScrobbleListener l) {
+        scrobbleListeners.remove(l);
     }
 }
