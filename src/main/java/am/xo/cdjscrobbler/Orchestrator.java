@@ -82,9 +82,9 @@ public class Orchestrator implements LifecycleListener, Runnable, DeviceAnnounce
         config = c;
     }
 
-    protected LinkedBlockingQueue<SongEvent> songEventQueue;
+    protected final LinkedBlockingQueue<SongEvent> songEventQueue = new LinkedBlockingQueue<>();
+    protected final QueueProcessor queueProcessor = new QueueProcessor(songEventQueue);
     protected UpdateListener updateListener;
-    protected QueueProcessor queueProcessor;
 
     public OrchestratorConfig getConfig() {
         return config;
@@ -105,9 +105,6 @@ public class Orchestrator implements LifecycleListener, Runnable, DeviceAnnounce
             // in order to log in to Twitter, for example.
             final LastFmClient lfm = isLfmEnabled() ? getLfmClient() : null;
             final TwitterClient twitter = isTwitterEnabled() ? getTwitterClient() : null;
-
-            songEventQueue = new LinkedBlockingQueue<>();
-            queueProcessor = new QueueProcessor(songEventQueue);
 
             // start two threads with a shared queue
             // TODO: dynamically add and remove UpdateListeners as devices are announced

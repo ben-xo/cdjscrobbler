@@ -27,13 +27,15 @@
 
 package am.xo.cdjscrobbler;
 
+import am.xo.cdjscrobbler.gui.logging.TextAreaAppender;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.slf4j.bridge.SLF4JBridgeHandler;
 import picocli.CommandLine;
 import picocli.CommandLine.Option;
 
-import java.awt.*;
+import java.awt.EventQueue;
+import java.awt.GraphicsEnvironment;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.NoSuchFileException;
@@ -216,9 +218,15 @@ public class CDJScrobbler implements Runnable {
         Orchestrator o = new Orchestrator(oconfig);
         if(!noGui && !GraphicsEnvironment.isHeadless()) {
             oconfig.setIsGui(true);
+
+            // cross-connect Gui and Orchestrator
+            Gui gui = new Gui(o);
+            o.addMessageListener(gui);
+
+            // enable Gui logging
+            TextAreaAppender.setTextArea(gui.getLogTextArea());
+
             EventQueue.invokeLater(() -> {
-                CDJScrobblerGui gui = new CDJScrobblerGui(o);
-                o.addMessageListener(gui);
                 gui.setVisible(true);
             });
         }

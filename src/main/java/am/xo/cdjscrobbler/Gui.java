@@ -34,11 +34,11 @@ import javax.swing.*;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 
-public class CDJScrobblerGui extends JFrame implements OrchestratorListener {
-    static final Logger logger = LoggerFactory.getLogger(CDJScrobblerGui.class);
+public class Gui extends JFrame implements OrchestratorListener {
+    static final Logger logger = LoggerFactory.getLogger(Gui.class);
 
     private final Orchestrator o;
-    public CDJScrobblerGui(Orchestrator o) {
+    public Gui(Orchestrator o) {
         this.o = o;
         initUI();
     }
@@ -48,6 +48,11 @@ public class CDJScrobblerGui extends JFrame implements OrchestratorListener {
     private JCheckBox tweetCoverArt;
     private JCheckBox dmcaWarning;
     private JTextArea readyLabel;
+    private JTextArea logTextArea;
+
+    public JTextArea getLogTextArea() {
+        return logTextArea;
+    }
 
     private void initUI() {
 
@@ -69,13 +74,17 @@ public class CDJScrobblerGui extends JFrame implements OrchestratorListener {
 
         readyLabel = new JTextArea("CDJ Scrobbler starting…");
 
+        // use getLogTextArea() to get this, and then set it as the logging destination
+        // using AWT TextArea as JTextArea doesn't support emoji
+        logTextArea = new JTextArea();
+
         // TODO
         // csv logger enable
         // csv logger filename
         // connect last.fm
         // connect twitter
 
-        createLayout(lfm, twitter, tweetCoverArt, dmcaWarning, readyLabel);
+        createLayout();
 
         setTitle("CDJ Scrobbler");
         setLocationRelativeTo(null);
@@ -83,7 +92,7 @@ public class CDJScrobblerGui extends JFrame implements OrchestratorListener {
     }
 
 
-    private void createLayout(JComponent... arg) {
+    private void createLayout() {
 
         Container pane = getContentPane();
         GroupLayout gl = new GroupLayout(pane);
@@ -93,26 +102,23 @@ public class CDJScrobblerGui extends JFrame implements OrchestratorListener {
         gl.setAutoCreateGaps(true);
 
         gl.setHorizontalGroup(
-                gl.createParallelGroup()
-                        .addComponent(arg[0])
-                        .addComponent(arg[1])
-                        .addComponent(arg[2])
-                        .addComponent(arg[3])
-                        .addComponent(arg[4])
+            gl.createParallelGroup()
+                .addComponent(lfm)
+                .addComponent(twitter)
+                .addComponent(tweetCoverArt)
+                .addComponent(dmcaWarning)
+                .addComponent(readyLabel)
+                .addComponent(logTextArea)
         );
 
         gl.setVerticalGroup(
-                gl.createSequentialGroup()
-                        .addGroup(gl.createParallelGroup()
-                            .addComponent(arg[0]))
-                        .addGroup(gl.createParallelGroup()
-                                .addComponent(arg[1]))
-                        .addGroup(gl.createParallelGroup()
-                                .addComponent(arg[2]))
-                        .addGroup(gl.createParallelGroup()
-                                .addComponent(arg[3]))
-                        .addGroup(gl.createParallelGroup()
-                                .addComponent(arg[4]))
+            gl.createSequentialGroup()
+                .addGroup(gl.createParallelGroup().addComponent(lfm))
+                .addGroup(gl.createParallelGroup().addComponent(twitter))
+                .addGroup(gl.createParallelGroup().addComponent(tweetCoverArt))
+                .addGroup(gl.createParallelGroup().addComponent(dmcaWarning))
+                .addGroup(gl.createParallelGroup().addComponent(readyLabel))
+                .addGroup(gl.createParallelGroup().addComponent(logTextArea))
         );
 
         pack();
